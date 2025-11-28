@@ -32,7 +32,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1rem;
         }
 
         .main-container {
@@ -41,7 +41,20 @@
             background: var(--bg-surface);
             border-radius: 24px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            padding: 3rem;
+            padding: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0.75rem;
+                justify-content: flex-start;
+                padding-top: 2rem;
+            }
+
+            .main-container {
+                border-radius: 16px;
+                padding: 1.5rem;
+            }
         }
 
         .calculator-card {
@@ -53,10 +66,25 @@
             cursor: pointer;
         }
 
+        @media (max-width: 768px) {
+            .calculator-card {
+                padding: 1.5rem;
+                border-radius: 12px;
+            }
+        }
+
         .calculator-card:hover {
             border-color: var(--accent-color);
             box-shadow: 0 8px 24px rgba(var(--accent-color-rgb), 0.2);
             transform: translateY(-4px);
+        }
+
+        @media (max-width: 768px) {
+            .calculator-card:active {
+                border-color: var(--accent-color);
+                box-shadow: 0 4px 12px rgba(var(--accent-color-rgb), 0.2);
+                transform: translateY(-2px);
+            }
         }
 
         .calculator-icon {
@@ -71,6 +99,15 @@
             margin-bottom: 1rem;
         }
 
+        @media (max-width: 768px) {
+            .calculator-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 1.75rem;
+                border-radius: 12px;
+            }
+        }
+
         .btn-primary {
             background-color: var(--accent-color);
             color: white;
@@ -82,10 +119,26 @@
             text-decoration: none;
         }
 
+        @media (max-width: 768px) {
+            .btn-primary {
+                padding: 0.625rem 1.5rem;
+                font-size: 0.95rem;
+                width: 100%;
+                text-align: center;
+            }
+        }
+
         .btn-primary:hover {
             filter: brightness(1.15);
             box-shadow: 0 4px 15px rgba(var(--accent-color-rgb), 0.4);
             transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .btn-primary:active {
+                filter: brightness(0.95);
+                transform: scale(0.98);
+            }
         }
 
         h1 {
@@ -96,11 +149,23 @@
             letter-spacing: -0.03em;
         }
 
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+        }
+
         h2 {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 1.25rem;
+            }
         }
 
         .subtitle {
@@ -109,16 +174,37 @@
             margin-bottom: 3rem;
         }
 
+        @media (max-width: 768px) {
+            .subtitle {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+        }
+
         .description {
             color: var(--text-secondary);
             line-height: 1.6;
             margin-bottom: 1.5rem;
         }
 
+        @media (max-width: 768px) {
+            .description {
+                font-size: 0.95rem;
+                line-height: 1.5;
+                margin-bottom: 1rem;
+            }
+        }
+
         .feature-list {
             list-style: none;
             padding: 0;
             margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .feature-list {
+                margin-bottom: 1.25rem;
+            }
         }
 
         .feature-list li {
@@ -128,12 +214,48 @@
             align-items: center;
         }
 
+        @media (max-width: 768px) {
+            .feature-list li {
+                padding: 0.4rem 0;
+                font-size: 0.9rem;
+            }
+        }
+
         .feature-list li:before {
             content: "✓";
             color: var(--accent-color);
             font-weight: bold;
             margin-right: 0.75rem;
             font-size: 1.25rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        .footer-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-light);
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .footer-section {
+                margin-top: 2rem;
+                padding-top: 1.5rem;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -144,7 +266,7 @@
             <p class="subtitle">专业的化学实验计算工具，提供准确、便捷的稀释与标定计算</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+        <div class="grid-container">
             <!-- 盐酸标准溶液配制计算器 -->
             <div class="calculator-card" onclick="window.location.href='hydrochloric-acid-calculator.html'">
                 <div class="calculator-icon">🧪</div>
@@ -178,7 +300,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border-light); text-align: center; color: var(--text-secondary);">
+        <div class="footer-section">
             <p>📚 适用于化学分析实验室、质量检测机构、教学科研等场景</p>
             <p style="margin-top: 0.5rem; font-size: 0.9rem;">
                 <a href="https://github.com/PWO-CHINA/Hydrochloric-acid-standard-solution-preparation-calculator" 
