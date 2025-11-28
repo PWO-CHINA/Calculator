@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>混合碱成分浓度计算器 (NaHCO₃ + Na₂CO₃)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 优化排版层级 - 改用系统默认字体栈以提升清晰度并去除斜杠0 */
+        :root {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            --bg-canvas: #f0f5f9;
+            --bg-surface: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6b7280;
+            --accent-color: #059669; /* 改为祖母绿/绿色系，区分之前的蓝色系 */
+            --accent-bg: #ecfdf5;
+            --color-error: #f04c4c;
+            --border-light: #e0e0e0;
+            --button-text: #ffffff;
+            --accent-color-rgb: 5, 150, 105;
+            --animation-state: running;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.07) 0%, 
+                var(--bg-canvas) 50%
+            );
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 1.5rem 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .main-calculator-card {
+            position: relative;
+            z-index: 20;
+            width: 90%;
+            max-width: 800px;
+            margin: 0;
+            margin-bottom: 4rem; 
+        }
+
+        /* --- 动画背景 --- */
+        #floating-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none; 
+            z-index: 1;
+        }
+        
+        .floating-element {
+            position: absolute;
+            top: 0;
+            left: var(--random-x);
+            color: var(--accent-color);
+            opacity: 0.12;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            animation: waterfall linear infinite;
+            animation-play-state: var(--animation-state);
+            user-select: none;
+            font-family: 'Times New Roman', serif;
+            will-change: transform;
+            transform: translate3d(0, -100vh, 0); 
+        }
+
+        @keyframes waterfall {
+            0% { transform: translate3d(0, -100vh, 0); }
+            100% { transform: translate3d(0, 150vh, 0); }
+        }
+        
+        /* --- 深色模式 --- */
+        body[data-mode="dark"] {
+            --bg-canvas: #0a0a0a;           
+            --bg-surface: #141414;          
+            --text-primary: #ffffff;        
+            --text-secondary: #a8b9d9;      
+            --color-error: #ff7f7f;         
+            --border-light: #333333;        
+            --button-text: #0a0a0a;         
+             background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.15) 0%, 
+                var(--bg-canvas) 50%
+            );
+        }
+
+        /* 通用类 */
+        .bg-surface { background-color: var(--bg-surface); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-light { border-color: var(--border-light); }
+        .accent-bg { background-color: var(--accent-bg); }
+        
+        /* 输入框样式 */
+        .input-field {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+            background-color: var(--bg-surface);
+            transition: border-color 0.3s, background-color 0.5s;
+        }
+        .input-field:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.3);
+            outline: none;
+        }
+
+        .theme-button { position: relative; }
+        .theme-button.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
+        }
+
+        /* 表格样式 */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .result-table th, .result-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+        .result-table th {
+            background-color: var(--accent-bg); 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .result-table tr:hover td {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+
+        /* 按钮动效 */
+        .calculate-button {
+            background-color: var(--accent-color); 
+            color: var(--button-text); 
+            transition: all 0.3s ease-out; 
+            font-weight: 700;
+        }
+        .calculate-button:hover {
+            filter: brightness(1.15); 
+            box-shadow: 0 4px 15px 0px rgba(var(--accent-color-rgb), 0.4); 
+            transform: translateY(-2px); 
+        }
+        .calculate-button:active {
+            filter: brightness(0.9); 
+            transform: scale(0.98); 
+            box-shadow: none;
+        }
+        .active-scale-98:active { transform: scale(0.98); }
+
+        .main-title { font-size: 2rem; font-weight: 900; letter-spacing: -0.05em; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+
+        /* Toast 提示样式 */
+        #toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .copyable-result {
+            cursor: pointer;
+            border-bottom: 1px dashed var(--accent-color);
+        }
+        .copyable-result:active { opacity: 0.7; }
+        
+        /* 针对小屏幕优化表格 */
+        @media (max-width: 640px) {
+            .result-table { display: block; overflow-x: auto; white-space: nowrap; }
+            .input-group { flex-direction: column; }
+            .input-group > div { width: 100%; margin-bottom: 0.5rem; }
+        }
+
+        /* --- 移动端横向滚动优化 --- */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .dot-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--border-light);
+            transition: all 0.3s ease;
+        }
+        .dot-indicator.active {
+            background-color: var(--accent-color);
+            transform: scale(1.2);
+            width: 20px;
+            border-radius: 4px;
+        }
+
+        @keyframes swipe-hint {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(10px); opacity: 1; }
+        }
+        .swipe-hint-icon {
+            animation: swipe-hint 1.5s infinite;
+        }
+
+        /* 历史记录展开样式 */
+        .history-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+        }
+        .history-details.open {
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+        .history-summary-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .history-summary-row:hover {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+        .expand-icon {
+            transition: transform 0.3s;
+        }
+        .expand-icon.open {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body data-mode="light">
+    
+    <div id="floating-container"></div>
+    
+    <!-- Toast Notification -->
+    <div id="toast-notification">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>内容已复制</span>
+    </div>
+
+    <div class="main-calculator-card bg-surface shadow-2xl rounded-2xl p-6 sm:p-8 space-y-6 border-t-8 border-[var(--accent-color)] transition-colors duration-500">
+
+        <!-- 顶部控制区 -->
+        <div class="flex flex-col space-y-4 pb-4 border-b border-[var(--border-light)] transition-colors duration-500">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-wrap items-center space-x-3">
+                    <span class="text-sm font-medium text-[var(--text-secondary)]">界面模式:</span>
+                    <button onclick="toggleMode()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="mode-text">浅色</span>
+                    </button>
+                    <button onclick="toggleAnimation()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="animation-text">动效开</span>
+                    </button>
+                </div>
+                <!-- 主题色选择 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="setAccent('starry-night')" class="theme-button w-6 h-6 rounded-full" style="background: #27497d;" title="星月夜"></button>
+                    <button onclick="setAccent('organic')" class="theme-button w-6 h-6 rounded-full" style="background: #8c7851;" title="大地色"></button>
+                    <button onclick="setAccent('emerald')" class="theme-button w-6 h-6 rounded-full active" style="background: #059669;" title="祖母绿"></button>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-2">
+                <h1 class="main-title text-primary">混合碱成分浓度计算器</h1>
+                <p class="text-[var(--text-secondary)] text-sm">双指示剂法 (NaHCO₃ + Na₂CO₃)</p>
+            </div>
+        </div>
+        
+        <!-- 全局参数设置 -->
+        <div class="bg-[var(--accent-bg)] p-4 rounded-lg border border-[var(--border-light)] transition-colors duration-500">
+            <h2 class="section-title">🧪 实验公共参数</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">HCl 标准溶液浓度 (mol/L)</label>
+                    <!-- 浓度输入框：4位有效数字控制 -->
+                    <input type="number" id="c-hcl" placeholder="0.1000" class="w-full rounded-lg p-2 border input-field tabular-nums" onchange="formatInputSigFigs(this, 4)">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">移取试样体积 V<sub>样</sub> (mL)</label>
+                    <input type="number" id="v-sample" step="0.01" value="25.00" class="w-full rounded-lg p-2 border input-field tabular-nums">
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据输入区 (3次测定 - 移动端支持横向滑动) -->
+        <div class="space-y-4">
+            <div class="flex justify-between items-end">
+                <h2 class="section-title flex items-center gap-2">
+                    📊 平行测定数据录入
+                    <!-- 移动端滑动提示图标 -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--accent-color)] lg:hidden swipe-hint-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </h2>
+                <span class="text-xs text-[var(--text-secondary)]">体积精确到 0.01 mL</span>
+            </div>
+            
+            <!-- 卡片容器: Mobile=Flex+Scroll, Desktop=Grid -->
+            <div id="trials-container" class="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory hide-scrollbar pb-2">
+                <!-- 动态生成的输入卡片 -->
+            </div>
+            
+            <!-- 移动端页码指示器 -->
+            <div id="trial-indicators" class="flex justify-center space-x-2 lg:hidden">
+                <!-- JS 填充 dots -->
+            </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="calculateResults()" class="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-lg calculate-button mt-4">
+            计算成分浓度 & 处理数据
+        </button>
+
+        <!-- 结果展示区 -->
+        <div id="result-section" class="hidden space-y-6">
+            <div class="border-t-2 border-[var(--accent-color)] pt-6">
+                <h2 class="section-title text-center mb-4">📝 数据记录与处理表</h2>
+                <div class="overflow-x-auto rounded-lg shadow-sm border border-[var(--border-light)]">
+                    <table class="result-table bg-surface">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%">测定次数</th>
+                                <th style="width: 23%">1</th>
+                                <th style="width: 23%">2</th>
+                                <th style="width: 23%">3</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-table-body">
+                            <!-- JS 填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 统计结果卡片 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm">
+                    <h3 class="font-bold text-[var(--accent-color)] mb-2 border-b pb-2">Na₂CO₃ 分析结果</h3>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-secondary">平均浓度:</span>
+                        <span class="font-bold text-primary copyable-result tabular-nums" onclick="copyText(this)" id="avg-na2co3">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-secondary">相对平均偏差 (RAD):</span>
+                        <span class="font-bold text-primary tabular-nums" id="rad-na2co3">-</span>
+                    </div>
+                </div>
+                <div class="p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm">
+                    <h3 class="font-bold text-[var(--accent-color)] mb-2 border-b pb-2">NaHCO₃ 分析结果</h3>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-secondary">平均浓度:</span>
+                        <span class="font-bold text-primary copyable-result tabular-nums" onclick="copyText(this)" id="avg-nahco3">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-secondary">相对平均偏差 (RAD):</span>
+                        <span class="font-bold text-primary tabular-nums" id="rad-nahco3">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录控制 -->
+        <div class="pt-6 border-t border-[var(--border-light)]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title mb-0">💾 历史记录</h2>
+                <div class="space-x-2">
+                     <button onclick="exportCSV()" class="px-3 py-1.5 bg-[#10b981] text-white rounded text-sm font-medium hover:bg-[#059669] transition active-scale-98">
+                        导出 CSV
+                    </button>
+                    <button onclick="clearHistory()" class="px-3 py-1.5 bg-[var(--color-error)] text-white rounded text-sm font-medium hover:opacity-90 transition active-scale-98">
+                        清空
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-[var(--text-secondary)] mb-4">点击记录行可查看/收起完整数据表</p>
+            <div id="history-container" class="space-y-3">
+                <!-- 历史卡片 -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 核心逻辑 ---
+        
+        // 更改 Key 以避免与旧版数据(NaOH)混淆
+        const HISTORY_KEY = 'mixedAlkaliHistory_Bicarb';
+        let historyData = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        
+        /**
+         * 核心修约函数：保留 n 位有效数字，遵循“四舍六入五成双”规则 (GB/T 8170)
+         * @param {number} num 待修约数值
+         * @param {number} sigFigs 有效数字位数
+         * @returns {string} 修约后的字符串
+         */
+        function roundToSigFigs(num, sigFigs) {
+            if (num === 0) return "0.0000".substring(0, sigFigs + 1); // 简单处理0的情况
+            if (isNaN(num)) return "-";
+
+            const absNum = Math.abs(num);
+            // 计算数量级，例如 0.1 -> -1, 10 -> 1
+            const d = Math.floor(Math.log10(absNum));
+            // 计算需要位移的幂次，使得第 sigFigs 位移动到个位
+            // 例如 num=0.10005 (d=-1), sigFigs=4. shift = 4 - 1 - (-1) = 4. 
+            // 0.10005 * 10000 = 1000.5
+            const shift = sigFigs - 1 - d;
+            const magnitude = Math.pow(10, shift);
+            const shifted = num * magnitude;
+
+            let roundedShifted;
+            const integerPart = Math.floor(shifted);
+            const fractionalPart = shifted - integerPart;
+            
+            // 使用微小 epsilon 处理浮点误差
+            const epsilon = 1e-10;
+
+            if (Math.abs(fractionalPart - 0.5) < epsilon) {
+                // 恰好为 0.5 的情况：看前一位（即 integerPart 的个位）
+                if (integerPart % 2 === 0) {
+                    roundedShifted = integerPart; // 偶数，舍去 (五成双)
+                } else {
+                    roundedShifted = integerPart + 1; // 奇数，进位 (五成双)
+                }
+            } else if (fractionalPart > 0.5) {
+                roundedShifted = Math.ceil(shifted);
+            } else {
+                roundedShifted = Math.floor(shifted);
+            }
+
+            const result = roundedShifted / magnitude;
+            
+            // 格式化输出，确保末尾的零被保留
+            // 需要的小数位数 = shift (如果 shift > 0)
+            const decimalPlaces = Math.max(0, shift);
+            return result.toFixed(decimalPlaces);
+        }
+
+        function formatInputSigFigs(input, sigFigs) {
+            const val = parseFloat(input.value);
+            if (!isNaN(val) && val !== 0) {
+                input.value = roundToSigFigs(val, sigFigs);
+            }
+        }
+
+        // 初始化 3 个测定输入框
+        function initTrials() {
+            const container = document.getElementById('trials-container');
+            const indicatorsContainer = document.getElementById('trial-indicators');
+            let html = '';
+            let indicatorsHtml = '';
+
+            for (let i = 1; i <= 3; i++) {
+                html += `
+                <div class="min-w-[85%] sm:min-w-[45%] lg:min-w-0 lg:w-full flex-shrink-0 snap-center p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative trial-card transition-all duration-300">
+                    <div class="absolute top-2 right-2 text-xs font-bold text-[var(--accent-color)] opacity-30 text-4xl select-none">${i}</div>
+                    <h3 class="font-bold text-primary mb-3 text-sm">第 ${i} 次测定</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">初读数 V<sub>初</sub> (mL)</label>
+                            <input type="number" id="v-start-${i}" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.00" oninput="liveCalc(${i})">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">第一终点 V<sub>终1</sub> (酚酞)</label>
+                            <input type="number" id="v-end1-${i}" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="mL" oninput="liveCalc(${i})">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">第二终点 V<sub>终2</sub> (甲基橙)</label>
+                            <input type="number" id="v-end2-${i}" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="mL" oninput="liveCalc(${i})">
+                        </div>
+                        <div class="pt-2 border-t border-dashed border-[var(--border-light)] text-xs space-y-1">
+                            <div class="flex justify-between"><span class="text-secondary">V<sub>1</sub> (mL):</span> <span id="disp-v1-${i}" class="tabular-nums font-bold text-[var(--accent-color)]">-</span></div>
+                            <div class="flex justify-between"><span class="text-secondary">V<sub>2</sub> (mL):</span> <span id="disp-v2-${i}" class="tabular-nums font-bold text-[var(--accent-color)]">-</span></div>
+                        </div>
+                    </div>
+                </div>`;
+                
+                indicatorsHtml += `<div class="dot-indicator ${i === 1 ? 'active' : ''}" data-index="${i-1}"></div>`;
+            }
+            container.innerHTML = html;
+            indicatorsContainer.innerHTML = indicatorsHtml;
+
+            setupScrollObserver(container);
+        }
+
+        // 监听滚动位置更新小圆点
+        function setupScrollObserver(container) {
+            const cards = container.querySelectorAll('.trial-card');
+            const dots = document.querySelectorAll('.dot-indicator');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const index = Array.from(cards).indexOf(entry.target);
+                        updateDots(index);
+                    }
+                });
+            }, {
+                root: container,
+                threshold: 0.6 
+            });
+
+            cards.forEach(card => observer.observe(card));
+        }
+
+        function updateDots(activeIndex) {
+            const dots = document.querySelectorAll('.dot-indicator');
+            dots.forEach((dot, idx) => {
+                if (idx === activeIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        // 实时计算单次 V1 V2
+        function liveCalc(index) {
+            const vStart = parseFloat(document.getElementById(`v-start-${index}`).value);
+            const vEnd1 = parseFloat(document.getElementById(`v-end1-${index}`).value);
+            const vEnd2 = parseFloat(document.getElementById(`v-end2-${index}`).value);
+            
+            const dispV1 = document.getElementById(`disp-v1-${index}`);
+            const dispV2 = document.getElementById(`disp-v2-${index}`);
+            
+            if (!isNaN(vStart) && !isNaN(vEnd1)) {
+                let v1 = vEnd1 - vStart;
+                dispV1.textContent = v1.toFixed(2);
+                if(v1 < 0) dispV1.classList.add('text-red-500');
+                else dispV1.classList.remove('text-red-500');
+            } else {
+                dispV1.textContent = '-';
+            }
+
+            if (!isNaN(vEnd1) && !isNaN(vEnd2)) {
+                let v2 = vEnd2 - vEnd1; 
+                dispV2.textContent = v2.toFixed(2);
+                if(v2 < 0) dispV2.classList.add('text-red-500');
+                else dispV2.classList.remove('text-red-500');
+            } else {
+                dispV2.textContent = '-';
+            }
+        }
+
+        function calculateResults() {
+            const cHcl = parseFloat(document.getElementById('c-hcl').value);
+            const vSample = parseFloat(document.getElementById('v-sample').value);
+            
+            if (isNaN(cHcl) || cHcl <= 0) return showToast("请输入有效的 HCl 浓度", true);
+            if (isNaN(vSample) || vSample <= 0) return showToast("请输入有效的试样体积", true);
+
+            let results = [];
+            let validTrials = 0;
+
+            for (let i = 1; i <= 3; i++) {
+                const vStartInput = document.getElementById(`v-start-${i}`);
+                const vEnd1Input = document.getElementById(`v-end1-${i}`);
+                const vEnd2Input = document.getElementById(`v-end2-${i}`);
+                
+                const vStart = parseFloat(vStartInput.value);
+                const vEnd1 = parseFloat(vEnd1Input.value);
+                const vEnd2 = parseFloat(vEnd2Input.value);
+
+                if (isNaN(vStart) || isNaN(vEnd1) || isNaN(vEnd2)) {
+                    results.push(null);
+                    continue;
+                }
+                
+                validTrials++;
+
+                const V1 = vEnd1 - vStart;
+                const V2 = vEnd2 - vEnd1; 
+                
+                const V_for_Na2CO3 = V1;
+                const V_for_NaHCO3_original = V2 - V1;
+                
+                // 计算浓度
+                const cNa2CO3 = (cHcl * V_for_Na2CO3) / vSample;
+                const cNaHCO3 = (cHcl * V_for_NaHCO3_original) / vSample; 
+
+                results.push({
+                    vStart, vEnd1, vEnd2, V1, V2,
+                    diffV: V_for_NaHCO3_original,
+                    cNa2CO3, cNaHCO3
+                });
+            }
+
+            if (validTrials === 0) return showToast("请至少输入一组完整数据", true);
+
+            // 渲染结果表格
+            renderTable(results, cHcl);
+            
+            // 计算统计数据
+            const validResults = results.filter(r => r !== null);
+            
+            // Na2CO3 统计
+            const avgNa2CO3 = validResults.reduce((sum, r) => sum + r.cNa2CO3, 0) / validResults.length;
+            const devNa2CO3 = validResults.reduce((sum, r) => sum + Math.abs(r.cNa2CO3 - avgNa2CO3), 0) / validResults.length;
+            const radNa2CO3 = avgNa2CO3 > 0 ? (devNa2CO3 / avgNa2CO3) * 100 : 0;
+
+            // NaHCO3 统计
+            const avgNaHCO3 = validResults.reduce((sum, r) => sum + r.cNaHCO3, 0) / validResults.length;
+            const devNaHCO3 = validResults.reduce((sum, r) => sum + Math.abs(r.cNaHCO3 - avgNaHCO3), 0) / validResults.length;
+            const radNaHCO3 = avgNaHCO3 > 0 ? (devNaHCO3 / avgNaHCO3) * 100 : 0;
+
+            // 显示统计 - 应用4位有效数字修约
+            document.getElementById('avg-na2co3').textContent = roundToSigFigs(avgNa2CO3, 4) + " mol/L";
+            document.getElementById('rad-na2co3').textContent = radNa2CO3.toFixed(2) + " %";
+            
+            document.getElementById('avg-nahco3').textContent = roundToSigFigs(avgNaHCO3, 4) + " mol/L";
+            document.getElementById('rad-nahco3').textContent = radNaHCO3.toFixed(2) + " %";
+
+            document.getElementById('result-section').classList.remove('hidden');
+
+            // 保存历史
+            const record = {
+                date: new Date().toISOString(),
+                cHcl, vSample, results, 
+                stats: { avgNa2CO3, radNa2CO3, avgNaHCO3, radNaHCO3 }
+            };
+            historyData.unshift(record);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+            renderHistory();
+            showToast("计算完成！");
+        }
+
+        // 生成表格 HTML
+        function generateTableHtml(results, cHcl, vSample) {
+            const getVal = (idx, key, fixed) => {
+                if (!results[idx]) return '';
+                return results[idx][key].toFixed(fixed);
+            };
+
+            const getSigVal = (idx, key, sigFigs) => {
+                 if (!results[idx]) return '';
+                 return roundToSigFigs(results[idx][key], sigFigs);
+            }
+
+            const rows = [
+                { label: `移取混合碱体积 V<sub>样</sub> (mL)`, val: () => parseFloat(vSample).toFixed(2) },
+                { label: `初读数 V<sub>初</sub> (mL)`, key: 'vStart', fix: 2 },
+                { label: `第一终点读数 V<sub>终1</sub> (mL)`, key: 'vEnd1', fix: 2 },
+                { label: `第二终点读数 V<sub>终2</sub> (mL)`, key: 'vEnd2', fix: 2 },
+                { label: `酚酞消耗 V<sub>1</sub> (mL)`, key: 'V1', fix: 2 },
+                { label: `甲基橙消耗 V<sub>2</sub> (mL)`, key: 'V2', fix: 2 },
+                { label: `V<sub>2</sub> - V<sub>1</sub> (mL)`, key: 'diffV', fix: 2 },
+                // 浓度应用 4 位有效数字
+                { label: `HCl 浓度 (mol/L)`, val: () => roundToSigFigs(parseFloat(cHcl), 4) },
+                { label: `<b>Na₂CO₃ (mol/L)</b>`, key: 'cNa2CO3', sig: 4, bold: true },
+                { label: `<b>NaHCO₃ (mol/L)</b>`, key: 'cNaHCO3', sig: 4, bold: true }, 
+            ];
+
+            let html = `<table class="result-table bg-surface w-full"><thead><tr><th style="width: 30%">测定次数</th><th style="width: 23%">1</th><th style="width: 23%">2</th><th style="width: 23%">3</th></tr></thead><tbody>`;
+            
+            rows.forEach(row => {
+                html += `<tr><td class="text-left font-medium">${row.label}</td>`;
+                for(let i=0; i<3; i++) {
+                    let text = '';
+                    if (row.val) {
+                        text = row.val();
+                    } else if (row.sig) {
+                        // 使用有效数字格式化
+                        text = getSigVal(i, row.key, row.sig);
+                    } else {
+                        // 使用固定小数位格式化 (体积)
+                        text = getVal(i, row.key, row.fix);
+                    }
+                    
+                    const style = row.bold ? 'font-bold tabular-nums text-[var(--accent-color)]' : 'tabular-nums';
+                    html += `<td class="${style}">${text}</td>`;
+                }
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function renderTable(results, cHcl) {
+            const vSample = document.getElementById('v-sample').value;
+            const tableHtml = generateTableHtml(results, cHcl, vSample);
+            // 提取 tbody 内容填充
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = tableHtml;
+            document.getElementById('result-table-body').innerHTML = tempDiv.querySelector('tbody').innerHTML;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                container.innerHTML = '<p class="text-center text-sm text-secondary">暂无历史记录</p>';
+                return;
+            }
+
+            historyData.forEach((rec, idx) => {
+                const date = new Date(rec.date).toLocaleString('zh-CN');
+                const tableHtml = generateTableHtml(rec.results, rec.cHcl, rec.vSample);
+                
+                const html = `
+                <div class="bg-surface border border-[var(--border-light)] rounded-lg shadow-sm text-sm overflow-hidden transition-all duration-300">
+                    <!-- 摘要行 (可点击) -->
+                    <div class="history-summary-row p-4 flex justify-between items-center" onclick="toggleHistory(${idx})">
+                        <div class="flex-1">
+                            <div class="font-bold text-[var(--accent-color)] mb-1">${date}</div>
+                            <div class="text-xs text-secondary flex gap-4">
+                                <span>Na₂CO₃: <b class="tabular-nums">${roundToSigFigs(rec.stats.avgNa2CO3, 4)} M</b></span>
+                                <span>NaHCO₃: <b class="tabular-nums">${roundToSigFigs(rec.stats.avgNaHCO3, 4)} M</b></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="event.stopPropagation(); deleteHistory(${idx})" class="text-[var(--color-error)] text-xs hover:underline">删除</button>
+                            <svg id="arrow-${idx}" class="w-5 h-5 text-secondary expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    
+                    <!-- 详情页 (展开) -->
+                    <div id="detail-${idx}" class="history-details bg-[var(--bg-canvas)] px-2 sm:px-4">
+                        <div class="py-4 overflow-x-auto">
+                           ${tableHtml}
+                           <div class="mt-3 text-xs text-secondary grid grid-cols-2 gap-2 p-2 bg-white rounded border border-[var(--border-light)]">
+                                <div><b>Na₂CO₃ 统计:</b> 平均 <span class="tabular-nums">${roundToSigFigs(rec.stats.avgNa2CO3, 4)}</span> M, RAD <span class="tabular-nums">${rec.stats.radNa2CO3.toFixed(2)}</span>%</div>
+                                <div><b>NaHCO₃ 统计:</b> 平均 <span class="tabular-nums">${roundToSigFigs(rec.stats.avgNaHCO3, 4)}</span> M, RAD <span class="tabular-nums">${rec.stats.radNaHCO3.toFixed(2)}</span>%</div>
+                           </div>
+                        </div>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        
+        function toggleHistory(idx) {
+            const detail = document.getElementById(`detail-${idx}`);
+            const arrow = document.getElementById(`arrow-${idx}`);
+            
+            // Toggle current
+            if (detail.classList.contains('open')) {
+                detail.classList.remove('open');
+                arrow.classList.remove('open');
+            } else {
+                detail.classList.add('open');
+                arrow.classList.add('open');
+            }
+        }
+        
+        function deleteHistory(index) {
+            historyData.splice(index, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if(confirm('确定清空所有记录吗？')) {
+                historyData = [];
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        }
+        
+        function exportCSV() {
+            if (historyData.length === 0) return showToast("无数据可导出", true);
+            
+            // 更新 CSV 表头
+            let csv = "时间,测定次数,V_初(mL),V_终1(mL),V_终2(mL),V1(mL),V2(mL),V2-V1(mL),C_Na2CO3(mol/L),C_NaHCO3(mol/L)\n";
+            
+            historyData.forEach(rec => {
+                const time = new Date(rec.date).toLocaleString().replace(',', ' ');
+                rec.results.forEach((r, i) => {
+                    if(!r) return;
+                    // 导出时也保留 4 位有效数字
+                    const cNa2CO3Sig = roundToSigFigs(r.cNa2CO3, 4);
+                    const cNaHCO3Sig = roundToSigFigs(r.cNaHCO3, 4);
+                    
+                    csv += `${time},${i+1},${r.vStart},${r.vEnd1},${r.vEnd2},${r.V1.toFixed(2)},${r.V2.toFixed(2)},${r.diffV.toFixed(2)},${cNa2CO3Sig},${cNaHCO3Sig}\n`;
+                });
+            });
+            
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `混合碱分析(Bicarb)_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- UI & 动效逻辑 ---
+        
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            toast.querySelector('span').innerText = msg;
+            const icon = toast.querySelector('svg');
+            
+            if (isError) {
+                icon.classList.remove('text-green-400');
+                icon.classList.add('text-red-400');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+            } else {
+                icon.classList.remove('text-red-400');
+                icon.classList.add('text-green-400');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function copyText(el) {
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => showToast("已复制到剪贴板"));
+        }
+
+        // 主题切换 - 默认设为 Emerald 绿色系，以区别之前的
+        const colorPalettes = {
+            'starry-night': { light: { '--accent-color': '#27497d', '--accent-bg': '#e6f0ff' }, dark: { '--accent-color': '#ffdf66', '--accent-bg': '#27497d' } },
+            'organic': { light: { '--accent-color': '#8c7851', '--accent-bg': '#eaddcf' }, dark: { '--accent-color': '#b39f7a', '--accent-bg': '#2b2620' } },
+            'emerald': { light: { '--accent-color': '#059669', '--accent-bg': '#ecfdf5' }, dark: { '--accent-color': '#34d399', '--accent-bg': '#102d24' } }
+        };
+        let currentAccent = 'emerald';
+        let currentMode = 'light';
+        let isAnim = true;
+
+        function setAccent(name) {
+            currentAccent = name;
+            applyTheme();
+            document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`button[onclick="setAccent('${name}')"]`).classList.add('active');
+        }
+        
+        function toggleMode() {
+            currentMode = currentMode === 'light' ? 'dark' : 'light';
+            document.getElementById('mode-text').innerText = currentMode === 'light' ? '浅色' : '深色';
+            document.body.setAttribute('data-mode', currentMode);
+            applyTheme();
+        }
+        
+        function applyTheme() {
+            const p = colorPalettes[currentAccent][currentMode];
+            const root = document.documentElement;
+            root.style.setProperty('--accent-color', p['--accent-color']);
+            root.style.setProperty('--accent-bg', p['--accent-bg']);
+            // Convert Hex to RGB for rgba usage
+            const hex = p['--accent-color'].replace('#', '');
+            const r = parseInt(hex.substring(0,2), 16);
+            const g = parseInt(hex.substring(2,4), 16);
+            const b = parseInt(hex.substring(4,6), 16);
+            root.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
+        }
+
+        // 动效
+        function toggleAnimation() {
+            isAnim = !isAnim;
+            document.getElementById('animation-text').innerText = isAnim ? '动效开' : '动效关';
+            document.documentElement.style.setProperty('--animation-state', isAnim ? 'running' : 'paused');
+            document.getElementById('floating-container').style.opacity = isAnim ? '1' : '0';
+        }
+
+        function createFloatingElements() { 
+            const container = document.getElementById('floating-container');
+            container.innerHTML = ''; 
+            // 更新化学符号，移除 OH-
+            const symbols = ['CO₃²⁻', 'H⁺', 'Na⁺', 'HCO₃⁻', 'pH', '8.3', '3.9', 'Cl⁻']; 
+            for (let i = 0; i < 40; i++) {
+                const el = document.createElement('div');
+                el.classList.add('floating-element');
+                el.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                // 关键修复：使用 CSS 变量确保位置正确应用
+                el.style.setProperty('--random-x', Math.random() * 100 + 'vw');
+                
+                el.style.fontSize = (Math.random() * 1.5 + 1) + 'rem';
+                el.style.animationDuration = (Math.random() * 15 + 15) + 's';
+                el.style.animationDelay = (Math.random() * -20) + 's';
+                container.appendChild(el);
+            }
+        }
+
+        // 初始化
+        window.onload = function() {
+            initTrials();
+            renderHistory();
+            createFloatingElements();
+            applyTheme(); // 确保颜色正确初始化
+        }
+
+    </script>
+</body>
+</html>
