@@ -2,12 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>高级化学计算器 - 稀释与标定</title>
-    <!-- 引入 Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化学计算器工具集</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 使用 Inter 字体作为默认字体，同时优化排版层级 */
         :root {
             font-family: 'Inter', sans-serif;
             --bg-canvas: #f0f5f9;
@@ -16,16 +14,12 @@
             --text-secondary: #6b7280;
             --accent-color: #8c7851;
             --accent-bg: #eaddcf;
-            --color-error: #f04c4c;
             --border-light: #e0e0e0;
-            --button-text: #ffffff;
             --accent-color-rgb: 140, 120, 81;
-            --animation-state: running;
         }
 
         body {
             background-color: var(--bg-canvas);
-            transition: background-color 0.5s ease, color 0.5s ease;
             background-image: radial-gradient(
                 circle at 50% 10%, 
                 rgba(var(--accent-color-rgb), 0.07) 0%, 
@@ -37,1448 +31,162 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding: 1.5rem 0;
-            box-sizing: border-box;
-             /* 防止移动端横向溢出 */
-            overflow-x: hidden;
-        }
-        
-        .main-calculator-card {
-            position: relative;
-            z-index: 10; 
-            width: 90%;
-            max-width: 500px;
-            margin: 0;
-            /* 移动端底部留白，防止内容被 Toast 遮挡 */
-            margin-bottom: 4rem; 
+            justify-content: center;
+            padding: 2rem;
         }
 
-        /* --- 动画修正 --- */
-        #floating-container {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .main-container {
+            max-width: 1000px;
             width: 100%;
-            height: 100%;
-            overflow: hidden;
-            pointer-events: none; 
-            z-index: 0;
-        }
-        
-        .floating-element {
-            position: absolute;
-            top: 0;
-            left: var(--initial-x-offset); 
-            color: var(--accent-color);
-            opacity: 0.1;
-            font-weight: 900;
-            line-height: 1;
-            white-space: nowrap;
-            animation: waterfall linear infinite;
-            animation-play-state: var(--animation-state);
-            user-select: none;
+            background: var(--bg-surface);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
         }
 
-        @keyframes waterfall {
-            0% { transform: translateY(-100vh); }
-            100% { transform: translateY(200vh); }
-        }
-        
-        /* --- 深色模式 --- */
-        body[data-mode="dark"] {
-            --bg-canvas: #0a0a0a;           
-            --bg-surface: #141414;          
-            --text-primary: #ffffff;        
-            --text-secondary: #a8b9d9;      
-            --color-error: #ff7f7f;         
-            --border-light: #333333;        
-            --button-text: #0a0a0a;         
-             background-image: radial-gradient(
-                circle at 50% 10%, 
-                rgba(var(--accent-color-rgb), 0.15) 0%, 
-                var(--bg-canvas) 50%
-            );
-        }
-
-        /* 通用类 */
-        .bg-surface { background-color: var(--bg-surface); }
-        .text-primary { color: var(--text-primary); }
-        .text-secondary { color: var(--text-secondary); }
-        .border-light { border-color: var(--border-light); }
-        .accent-bg { background-color: var(--accent-bg); }
-        
-        /* 输入框样式 */
-        .input-field {
-            border-color: var(--border-light);
-            color: var(--text-primary);
-            background-color: var(--bg-surface);
-            transition: border-color 0.3s, background-color 0.5s;
-        }
-        .input-field:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.3);
-            outline: none;
-        }
-
-        /* C1: 主题按钮选中态优化 - 双层环效果 */
-        .theme-button {
-            position: relative;
-        }
-        .theme-button.active {
-            transform: scale(1.1);
-            box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
-        }
-
-        /* 表格样式 */
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px; 
-        }
-        .history-table th, .history-table td {
-            padding: 10px 6px;
-            text-align: center;
-            border-bottom: 1px solid var(--border-light); 
-            color: var(--text-primary);
-        }
-        .history-table thead {
-            background-color: var(--accent-bg); 
-            color: var(--text-primary);
-        }
-        .data-table th, .data-table td {
-            padding: 8px;
-            border: 1px solid var(--border-light);
-            text-align: center;
-        }
-        .data-table th { background-color: var(--accent-bg); }
-
-        /* 按钮动效 */
-        .calculate-button {
-            background-color: var(--accent-color); 
-            color: var(--button-text); 
-            transition: all 0.3s ease-out; 
-            font-weight: 700;
-        }
-        .calculate-button:hover {
-            filter: brightness(1.15); 
-            box-shadow: 0 4px 15px 0px rgba(var(--accent-color-rgb), 0.4); 
-            transform: translateY(-2px); 
-        }
-        .calculate-button:active {
-            filter: brightness(0.9); 
-            transform: scale(0.98); 
-            box-shadow: none;
-        }
-        .active-scale-98:active { transform: scale(0.98); }
-
-        /* 排版 */
-        .main-title { font-size: 2.25rem; font-weight: 900; letter-spacing: -0.05em; }
-        .section-title { font-size: 1.25rem; font-weight: 700; }
-        
-        /* 模式切换栏 */
-        #mode-selector {
-            position: relative;
-            top: auto;
-            left: auto;
-            transform: none;
-            z-index: 50; 
-            display: flex;
-            flex-direction: row;
-            width: 90%;
-            max-width: 500px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.5s ease-out;
-        }
-
-        .mode-tab {
-            width: 50%;
-            padding: 12px 8px;
+        .calculator-card {
+            background: var(--bg-surface);
+            border: 2px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
             cursor: pointer;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            background-color: var(--bg-surface);
-            transition: all 0.3s ease-in-out;
-            border-left: none; 
-            border-right: 1px solid var(--border-light); 
-            border-bottom: 4px solid transparent;
-        }
-        .mode-tab:last-child { border-right: none; }
-
-        #mode-selector .mode-tab.active-mode {
-            color: var(--accent-color);
-            background-color: var(--accent-bg);
-            border-bottom-color: var(--accent-color) !important; 
-            border-left-color: transparent;
-            box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.15) inset;
-        }
-        .mode-tab:hover:not(.active-mode) {
-             background-color: var(--accent-bg);
-             opacity: 0.8;
         }
 
-        @media (min-width: 640px) {
-            #mode-selector {
-                position: fixed;
-                top: 50%;
-                left: 0;
-                transform: translateY(-50%);
-                flex-direction: column;
-                width: auto;
-                max-width: none;
-                margin-bottom: 0;
-                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
-                border-radius: 0 12px 12px 0;
-            }
-            .mode-tab {
-                width: 120px;
-                border-left: 4px solid transparent;
-                border-right: none;
-                border-bottom: 1px solid var(--border-light);
-            }
-            .mode-tab:last-child { border-bottom: none; }
-            #mode-selector .mode-tab.active-mode {
-                border-left-color: var(--accent-color);
-                border-bottom-color: var(--border-light) !important;
-            }
-        }
-        
-        .unit-toggle-btn {
-            background-color: var(--accent-color);
-            color: var(--button-text);
-            transition: all 0.3s ease-in-out;
-            border: 1px solid var(--accent-color);
-            font-weight: 500;
-        }
-        .unit-toggle-btn.inactive {
-            background-color: var(--bg-surface);
-            color: var(--accent-color);
-            border: 1px solid var(--border-light);
+        .calculator-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 24px rgba(var(--accent-color-rgb), 0.2);
+            transform: translateY(-4px);
         }
 
-        /* A5: Toast 提示样式 */
-        #toast-notification {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            z-index: 100;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            pointer-events: none;
+        .calculator-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--accent-bg);
+            border-radius: 16px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        #toast-notification.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-        
-        /* A5: 可点击复制的元素样式 */
-        .copyable-result {
-            cursor: pointer;
-            position: relative;
-            transition: transform 0.1s;
-            border-bottom: 2px dashed rgba(var(--accent-color-rgb), 0.3);
-        }
-        .copyable-result:active {
-            transform: scale(0.95);
-        }
-        .copyable-result::after {
-            content: '📋';
-            font-size: 0.8rem;
-            position: absolute;
-            top: -0.8rem;
-            right: -1.2rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .copyable-result:hover::after {
-            opacity: 1;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
         }
 
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.15);
+            box-shadow: 0 4px 15px rgba(var(--accent-color-rgb), 0.4);
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.03em;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-bottom: 3rem;
+        }
+
+        .description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
     </style>
 </head>
-<body data-mode="light">
-    
-    <div id="floating-container"></div>
-    
-    <!-- Toast Notification (A5) -->
-    <div id="toast-notification">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>结果已复制到剪贴板</span>
-    </div>
-    
-    <div id="mode-selector">
-        <div id="tab-dilution" class="mode-tab active-mode" onclick="setMode('dilution')">
-            <div class="text-lg">💧</div> 
-            稀释配制
+<body>
+    <div class="main-container">
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <h1>化学计算器工具集</h1>
+            <p class="subtitle">专业的化学实验计算工具，提供准确、便捷的稀释与标定计算</p>
         </div>
-        <div id="tab-standardization" class="mode-tab" onclick="setMode('standardization')">
-            <div class="text-lg">⚗️</div>
-            浓度标定
-        </div>
-    </div>
 
-    <div class="main-calculator-card bg-surface shadow-2xl rounded-2xl p-8 space-y-8 border-t-8 border-[var(--accent-color)] transition-colors duration-500">
-
-        <!-- 顶部控制区 -->
-        <div class="flex flex-col space-y-4 pb-4 border-b border-[var(--border-light)] transition-colors duration-500">
-            <div class="flex flex-wrap items-center space-x-3">
-                <span class="text-sm font-medium text-[var(--text-secondary)] self-center">界面模式:</span>
-                <button onclick="toggleMode()"
-                        class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] hover:bg-[var(--border-light)] transition-colors duration-300 active-scale-98 text-sm font-medium border border-[var(--border-light)]">
-                    <span id="mode-text">浅色模式</span>
-                </button>
-
-                <span class="text-sm font-medium text-[var(--text-secondary)] self-center ml-6 sm:ml-8">动态特效:</span>
-                <button onclick="toggleAnimation()"
-                        class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] hover:bg-[var(--border-light)] transition-colors duration-300 active-scale-98 text-sm font-medium border border-[var(--border-light)]">
-                    <span id="animation-text">已开启</span>
-                </button>
-            </div>
-
-            <!-- C1: 强调色选择 (样式优化) -->
-            <div class="flex items-center space-x-2 pt-2">
-                <span class="text-sm font-medium text-[var(--text-secondary)] self-center">强调色:</span>
-                
-                <button id="accent-organic" onclick="setAccent('organic')" 
-                        class="theme-button w-8 h-8 rounded-full transition-all duration-300 active"
-                        style="background: #8c7851;" title="有机暖色主题">
-                </button>
-                <button id="accent-starry-night" onclick="setAccent('starry-night')" 
-                        class="theme-button w-8 h-8 rounded-full transition-all duration-300"
-                        style="background: #27497d;" title="星月夜深色主题">
-                </button>
-                <button id="accent-emerald" onclick="setAccent('emerald')" 
-                        class="theme-button w-8 h-8 rounded-full transition-all duration-300"
-                        style="background: #059669;" title="祖母绿主题">
-                </button>
-                <button id="accent-violet" onclick="setAccent('violet')" 
-                        class="theme-button w-8 h-8 rounded-full transition-all duration-300"
-                        style="background: #8b5cf6;" title="紫罗兰主题">
-                </button>
-            </div>
-        </div>
-        
-        <!-- ----------------------------------------------------- -->
-        <!-- 模式一：稀释配制计算 (Dilution) -->
-        <!-- ----------------------------------------------------- -->
-        <div id="view-dilution" class="space-y-8">
-            <h1 class="main-title text-center text-primary">稀盐酸配置计算器</h1>
-            <p class="text-center text-[var(--text-secondary)] text-md">根据 C<sub>1</sub>V<sub>1</sub> = C<sub>2</sub>V<sub>2</sub> 公式计算所需浓盐酸体积。</p>
-
-            <div class="bg-[var(--accent-bg)] p-4 rounded-lg border border-light transition-colors duration-500">
-                <h2 class="section-title text-primary mb-2">浓盐酸 (HCl) 标准参考参数：</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label for="conc-density-input" class="block text-sm font-bold text-primary mb-1">
-                            浓盐酸密度 (g/mL)
-                        </label>
-                        <input type="number" id="conc-density-input" placeholder="例如: 1.19" min="0.5" step="0.001" value="1.19"
-                               class="w-full rounded-lg p-3 border input-field" oninput="validateDilutionInputs()">
-                    </div>
-
-                    <div>
-                        <label for="conc-molarity-input" class="block text-sm font-bold text-primary mb-1">
-                            当前浓盐酸摩尔浓度 (C<sub>浓</sub>) (M)
-                        </label>
-                        <div class="flex space-x-2">
-                            <input type="number" id="conc-molarity-input" placeholder="例如: 12.063" min="0.001" step="0.001"
-                                class="flex-1 block w-full rounded-lg p-3 border input-field" oninput="validateDilutionInputs()">
-                            <button onclick="resetConcentration()"
-                                    class="px-4 py-2 bg-[var(--border-light)] text-primary rounded-lg hover:filter hover:brightness-90 text-sm font-medium transition duration-150 ease-in-out active-scale-98 whitespace-nowrap">
-                                重置
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-6">
-                <div>
-                    <label for="target-volume" class="block text-sm font-medium text-secondary mb-1">
-                        目标稀盐酸体积 (V<sub>稀</sub>)
-                    </label>
-                    <div class="mt-1 flex rounded-md shadow-sm">
-                        <input type="number" id="target-volume" placeholder="例如: 500" min="0.1" step="0.1"
-                               class="flex-1 block w-full rounded-l-md p-3 border input-field" oninput="hideMessages()">
-                        <div class="flex items-center">
-                             <button id="volume-unit-mL" class="unit-toggle-btn w-12 h-full rounded-none" onclick="toggleDilutionUnit('volume', 'mL')">
-                                mL
-                            </button>
-                            <button id="volume-unit-L" class="unit-toggle-btn inactive w-12 h-full rounded-r-md" onclick="toggleDilutionUnit('volume', 'L')">
-                                L
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label for="target-concentration" class="block text-sm font-medium text-secondary mb-1">
-                        目标稀盐酸浓度 (C<sub>稀</sub>)
-                    </label>
-                    <div class="mt-1 flex rounded-md shadow-sm">
-                        <input type="number" id="target-concentration" placeholder="例如: 0.1" min="0.001" step="0.001"
-                               class="flex-1 block w-full rounded-l-md p-3 border input-field" oninput="validateDilutionInputs()">
-                        <div class="flex items-center">
-                             <button id="conc-unit-M" class="unit-toggle-btn w-12 h-full rounded-none" onclick="toggleDilutionUnit('conc', 'M')">
-                                M
-                            </button>
-                            <button id="conc-unit-W" class="unit-toggle-btn inactive w-16 h-full rounded-r-md" onclick="toggleDilutionUnit('conc', 'W')">
-                                %
-                            </button>
-                        </div>
-                    </div>
-                    <!-- A4: 实时警告信息容器 -->
-                    <p id="dilution-warning-text" class="text-xs text-[var(--color-error)] mt-1 font-bold hidden">
-                        ⚠️ 目标浓度不能高于浓盐酸原液浓度。
-                    </p>
-
-                    <div id="target-density-group" class="mt-2" style="display:none;">
-                         <label for="target-density" class="block text-xs font-medium text-secondary mb-1">
-                            目标稀盐酸密度 (g/mL) <span class="text-[var(--accent-color)] font-bold ml-1" id="auto-density-badge" style="display:none;">(⚡️已自动估算)</span>
-                        </label>
-                        <input type="number" id="target-density" placeholder="例如: 1.00" min="0.5" step="0.001" value="1.00"
-                               class="w-full rounded-lg p-2 border input-field" oninput="validateDilutionInputs()">
-                        <p class="text-xs text-secondary mt-1">
-                            说明: "质量%" -> "摩尔浓度" 的换算必须依赖密度。App 会根据您输入的浓度自动估算近似密度。
-                        </p>
-                    </div>
-                </div>
-                
-                <input type="hidden" id="V_dilute_unit" value="mL">
-                <input type="hidden" id="C_dilute_unit" value="M">
-
-                <button id="calculate-dilution-btn" onclick="calculateDilution()"
-                        class="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-lg calculate-button">
-                    计算所需浓盐酸体积
-                </button>
-            </div>
-
-            <div id="dilution-result-box" class="mt-6 p-6 bg-surface rounded-lg border-2 border-[var(--accent-color)] hidden transition-colors duration-500">
-                <h2 class="text-xl font-bold text-[var(--accent-color)] mb-2">计算结果 (V<sub>浓</sub>)</h2>
-                <div class="flex items-baseline space-x-2">
-                    <!-- A5: 添加点击复制 -->
-                    <span id="required-volume" class="text-4xl font-extrabold text-[var(--accent-color)] copyable-result" onclick="copyResult(this)">0.00</span> 
-                    <span id="required-volume-unit" class="text-xl font-bold text-[var(--accent-color)]">mL</span>
-                </div>
-                <p class="text-sm text-secondary mt-2">
-                    <span class="inline-block bg-[var(--accent-bg)] text-[var(--text-primary)] px-2 py-0.5 rounded text-xs mr-1">提示</span>
-                    点击结果数值可复制。取该体积浓盐酸，加水稀释至目标体积。
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+            <!-- 盐酸标准溶液配制计算器 -->
+            <div class="calculator-card" onclick="window.location.href='hydrochloric-acid-calculator.html'">
+                <div class="calculator-icon">🧪</div>
+                <h2>盐酸标准溶液配制计算器</h2>
+                <p class="description">
+                    用于计算盐酸标准溶液的配制与标定。支持稀释计算、浓度标定、体积计算等功能，适用于分析化学实验室的日常工作。
                 </p>
+                <ul class="feature-list">
+                    <li>盐酸溶液稀释计算</li>
+                    <li>标准溶液浓度标定</li>
+                    <li>体积与浓度换算</li>
+                    <li>历史记录管理</li>
+                </ul>
+                <a href="hydrochloric-acid-calculator.html" class="btn-primary">打开计算器 →</a>
             </div>
 
-            <div class="mt-10 pt-6 border-t border-light transition-colors duration-500">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
-                    <h2 class="section-title text-primary">稀释历史记录</h2>
-                    <div class="space-x-2">
-                        <button onclick="exportCSV('dilution')"
-                                class="px-3 py-1 bg-[#2ECC71] text-white rounded-lg hover:bg-[#25A764] text-sm font-medium transition duration-150 ease-in-out active-scale-98">
-                            导出 CSV
-                        </button>
-                        <button onclick="clearHistory('dilution')"
-                                class="px-3 py-1 bg-[var(--color-error)] text-white rounded-lg hover:filter hover:brightness-90 text-sm font-medium transition duration-150 ease-in-out active-scale-98">
-                            清空记录
-                        </button>
-                    </div>
-                </div>
-                <div id="dilution-history-container" class="overflow-x-auto"></div>
-            </div>
-        </div>
-        
-        <!-- ----------------------------------------------------- -->
-        <!-- 模式二：盐酸标准溶液标定计算 (Standardization) -->
-        <!-- ----------------------------------------------------- -->
-        <div id="view-standardization" class="space-y-8 hidden">
-             <h1 class="main-title text-center text-primary">稀盐酸浓度标定器</h1>
-             <p class="text-center text-[var(--text-secondary)] text-md">使用基准物质标定 HCl 溶液的准确浓度。</p>
-             
-             <div class="accent-bg p-4 rounded-lg border border-light transition-colors duration-500">
-                <h2 class="section-title text-primary mb-2">标定参数设置：</h2>
-                
-                <!-- B3: 基准物质选择 -->
-                <div class="mb-4">
-                    <label for="standard-substance" class="block text-sm font-bold text-primary mb-1">
-                        选择基准物质
-                    </label>
-                    <select id="standard-substance" onchange="updateStandardSubstance()"
-                            class="w-full rounded-lg p-3 border input-field cursor-pointer">
-                        <option value="Na2CO3">无水碳酸钠 (Na₂CO₃)</option>
-                        <option value="Borax">硼砂 (Na₂B₄O₇·10H₂O)</option>
-                    </select>
-                </div>
-
-                <div class="text-sm space-y-1 text-secondary">
-                    <p>反应化学计量比：<span id="stoich-display" class="font-mono font-bold">2HCl ~ 1Na<sub>2</sub>CO<sub>3</sub></span></p>
-                    <p id="formula-display" class="font-mono text-base break-words text-xs sm:text-sm">
-                        C<sub>HCl</sub> = (2 × m) / (M × V × 10<sup>-3</sup>)
-                    </p>
-                </div>
-
-                <div class="mt-4">
-                    <label for="molar-mass-standard" class="block text-sm font-bold text-primary mb-1">
-                        基准物摩尔质量 (M) (g/mol)
-                    </label>
-                    <div class="flex space-x-2">
-                        <input type="number" id="molar-mass-standard" value="105.99" min="1" step="0.01"
-                               class="flex-1 block w-full rounded-lg p-3 border input-field">
-                        <button onclick="resetMolarMass()"
-                                class="px-4 py-2 bg-[var(--border-light)] text-primary rounded-lg hover:filter hover:brightness-90 text-sm font-medium transition duration-150 ease-in-out active-scale-98 whitespace-nowrap">
-                            重置
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <label for="rsd-limit" class="block text-sm font-bold text-primary mb-1">
-                        RSD 验收标准 (%)
-                    </label>
-                    <div class="flex space-x-2">
-                        <input type="number" id="rsd-limit" value="0.20" min="0.01" step="0.01"
-                               class="flex-1 block w-full rounded-lg p-3 border input-field" oninput="hideMessages()">
-                        <span class="px-4 py-2 bg-[var(--border-light)] text-primary rounded-lg text-sm font-medium transition duration-150 ease-in-out active-scale-98 whitespace-nowrap">
-                            %
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <h2 class="section-title text-primary">平行测定数据输入 (3次)</h2>
-            <div id="trials-container" class="space-y-4">
-                <!-- Trial 1 -->
-                <div class="p-4 rounded-lg border border-light bg-surface space-y-2" data-trial="1">
-                    <h3 class="font-bold text-primary">第 1 次测定</h3>
-                    <div>
-                        <label for="mass-1" class="block text-xs font-medium text-secondary mb-1">基准物质量 m (g)</label>
-                        <input type="number" id="mass-1" placeholder="质量 (g)" min="0.001" step="0.0001" value=""
-                               class="w-full rounded-lg p-2 border input-field" oninput="hideMessages()">
-                    </div>
-                    <div>
-                        <label for="volume-1" class="block text-xs font-medium text-secondary mb-1">HCl 消耗体积 (mL)</label>
-                        <input type="number" id="volume-1" placeholder="体积 (mL)" min="0.01" step="0.01" value=""
-                               class="w-full rounded-lg p-2 border input-field" oninput="hideMessages()">
-                    </div>
-                </div>
-                 <!-- Trial 2 -->
-                <div class="p-4 rounded-lg border border-light bg-surface space-y-2" data-trial="2">
-                    <h3 class="font-bold text-primary">第 2 次测定</h3>
-                    <div>
-                        <label for="mass-2" class="block text-xs font-medium text-secondary mb-1">基准物质量 m (g)</label>
-                        <input type="number" id="mass-2" placeholder="质量 (g)" min="0.001" step="0.0001" value=""
-                               class="w-full rounded-lg p-2 border input-field" oninput="hideMessages()">
-                    </div>
-                    <div>
-                        <label for="volume-2" class="block text-xs font-medium text-secondary mb-1">HCl 消耗体积 (mL)</label>
-                        <input type="number" id="volume-2" placeholder="体积 (mL)" min="0.01" step="0.01" value=""
-                               class="w-full rounded-lg p-2 border input-field" oninput="hideMessages()">
-                    </div>
-                </div>
-                 <!-- Trial 3 -->
-                <div class="p-4 rounded-lg border border-light bg-surface space-y-2" data-trial="3">
-                    <h3 class="font-bold text-primary">第 3 次测定</h3>
-                    <div>
-                        <label for="mass-3" class="block text-xs font-medium text-secondary mb-1">基准物质量 m (g)</label>
-                        <input type="number" id="mass-3" placeholder="质量 (g)" min="0.001" step="0.0001" value=""
-                               class="w-full rounded-lg p-2 border input-field" oninput="hideMessages()">
-                    </div>
-                    <div>
-                        <label for="volume-3" class="block text-xs font-medium text-secondary mb-1">HCl 消耗体积 (mL)</label>
-                        <input type="number" id="volume-3" placeholder="体积 (mL)" min="0.01" step="0.01" value=""
-                               class="w-full rounded-lg p-2 border input-field" oninput="hideMessages()">
-                    </div>
-                </div>
-            </div>
-            
-            <button id="calculate-standardization-btn" onclick="calculateStandardization()"
-                    class="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-lg calculate-button">
-                计算准确摩尔浓度
-            </button>
-            
-            <div id="standardization-result-box" class="mt-6 p-6 bg-surface rounded-lg border-2 border-[var(--accent-color)] hidden transition-colors duration-500">
-                <h2 class="text-xl font-bold text-[var(--accent-color)] mb-4">标定结果汇总</h2>
-                <div id="standardization-results" class="space-y-4">
-                    <table class="data-table w-full">
-                        <thead>
-                            <tr>
-                                <th>次数</th>
-                                <th>m (g)</th>
-                                <th>V (mL)</th>
-                                <th>C<sub>HCl</sub> (M)</th> 
-                            </tr>
-                        </thead>
-                        <tbody id="standardization-data-body"></tbody>
-                    </table>
-
-                    <div class="flex flex-col sm:flex-row justify-between items-center bg-[var(--accent-bg)] p-3 rounded-lg font-semibold transition-colors duration-500">
-                        <span class="text-primary text-lg">平均浓度 C<sub>HCl</sub> (M):</span> 
-                        <!-- A5: 点击复制 -->
-                        <span id="avg-concentration" class="text-[var(--accent-color)] text-3xl font-extrabold copyable-result" onclick="copyResult(this)">0.0000</span>
-                    </div>
-                    
-                    <div class="p-2 rounded-lg border border-light text-primary text-sm space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span>相对平均偏差 (RSD):</span>
-                            <span id="rsd-value" class="text-[var(--color-error)] font-bold">0.00%</span>
-                        </div>
-                         <div id="rsd-warning" class="hidden p-2 rounded-lg bg-red-100 text-[var(--color-error)] text-center font-semibold border border-[var(--color-error)]" role="alert">
-                            ⚠️ RSD 超出验收标准（<span id="rsd-limit-display">0.00%</span>），实验精密度可能不足。
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-10 pt-6 border-t border-light transition-colors duration-500">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
-                    <h2 class="section-title text-primary">标定历史记录</h2>
-                    <div class="space-x-2">
-                        <button onclick="exportCSV('standardization')"
-                                class="px-3 py-1 bg-[#2ECC71] text-white rounded-lg hover:bg-[#25A764] text-sm font-medium transition duration-150 ease-in-out active-scale-98">
-                            导出 CSV
-                        </button>
-                        <button onclick="clearHistory('standardization')"
-                                class="px-3 py-1 bg-[var(--color-error)] text-white rounded-lg hover:filter hover:brightness-90 text-sm font-medium transition duration-150 ease-in-out active-scale-98">
-                            清空记录
-                        </button>
-                    </div>
-                </div>
-                <div id="standardization-history-container" class="overflow-x-auto"></div>
+            <!-- 混合碱滴定计算器 -->
+            <div class="calculator-card" onclick="window.location.href='mixed-alkali-calculator.html'">
+                <div class="calculator-icon">⚗️</div>
+                <h2>混合碱滴定计算器</h2>
+                <p class="description">
+                    用于混合碱（如 NaOH 与 Na₂CO₃ 混合物）的双指示剂滴定分析。自动计算各组分含量，支持多种碱组合的定量分析。
+                </p>
+                <ul class="feature-list">
+                    <li>双指示剂法滴定分析</li>
+                    <li>多组分碱含量计算</li>
+                    <li>自动判断碱类型组合</li>
+                    <li>实验数据记录</li>
+                </ul>
+                <a href="mixed-alkali-calculator.html" class="btn-primary">打开计算器 →</a>
             </div>
         </div>
 
-        <div id="error-box" class="mt-6 p-4 accent-bg border border-[var(--color-error)] text-[var(--color-error)] rounded-lg hidden transition-colors duration-500">
-            <p id="error-message" class="text-sm font-medium"></p>
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border-light); text-align: center; color: var(--text-secondary);">
+            <p>📚 适用于化学分析实验室、质量检测机构、教学科研等场景</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                <a href="https://github.com/PWO-CHINA/Hydrochloric-acid-standard-solution-preparation-calculator" 
+                   style="color: var(--accent-color); text-decoration: none;">
+                    GitHub 项目主页
+                </a>
+            </p>
         </div>
-
     </div>
-
-    <script>
-        // --- 常量定义 (更新 B3: 多种基准物) ---
-        const STANDARDS = {
-            'Na2CO3': {
-                name: '无水碳酸钠',
-                molarMass: 105.99,
-                formulaDisplay: '2HCl ~ 1Na<sub>2</sub>CO<sub>3</sub>'
-            },
-            'Borax': {
-                name: '硼砂 (Na₂B₄O₇·10H₂O)',
-                molarMass: 381.37,
-                formulaDisplay: '2HCl ~ 1Na<sub>2</sub>B<sub>4</sub>O<sub>7</sub>' // 简化显示，实际也是 2:1
-            }
-        };
-
-        const STANDARD_CONC_MOLARITY = 12.063; 
-        const STANDARD_DENSITY = 1.19;        
-        const HCL_MOLAR_MASS = 36.46;          
-        
-        const DILUTION_HISTORY_KEY = 'hclDilutionHistory';
-        const STANDARDIZATION_HISTORY_KEY = 'hclStandardizationHistory';
-        const ACCENT_KEY = 'hclDilutionAccent';
-        const MODE_KEY = 'hclDilutionMode';
-        const ANIMATION_KEY = 'hclDilutionAnimation'; 
-        const CUSTOM_CONC_KEY = 'hclDilutionCustomConc';
-        const CUSTOM_RSD_KEY = 'hclStandardizationRSD';
-
-        let dilutionHistory = []; 
-        let standardizationHistory = [];
-        let currentAccent = 'organic';
-        let currentMode = 'dilution';
-        let isAnimationEnabled = true; 
-        
-        let dilutionVolumeUnit = 'mL'; 
-        let dilutionConcUnit = 'M';    
-        
-        // 当前选择的基准物 key
-        let currentStandardKey = 'Na2CO3';
-
-        let floatingElements = [];
-        let mouseX = 0;
-        let mouseY = 0;
-        const INTERACTION_RADIUS = 120; 
-        const REPEL_FORCE = 30;
-
-        const colorPalettes = {
-            'organic': {
-                name: '有机暖色',
-                light: { '--accent-color': '#8c7851', '--accent-bg': '#eaddcf', '--button-text': '#ffffff' },
-                dark: { '--accent-color': '#b39f7a', '--accent-bg': '#2b2620', '--button-text': '#141414' }
-            },
-            'starry-night': {
-                name: '星月夜深色',
-                light: { '--accent-color': '#1f488e', '--accent-bg': '#e6f0ff', '--button-text': '#ffffff' },
-                dark: { '--accent-color': '#ffdf66', '--accent-bg': '#27497d', '--button-text': '#0a0a0a' }
-            },
-            'emerald': {
-                name: '祖母绿',
-                light: { '--accent-color': '#059669', '--accent-bg': '#ecfdf5', '--button-text': '#ffffff' },
-                dark: { '--accent-color': '#34d399', '--accent-bg': '#102d24', '--button-text': '#0a0a0a' }
-            },
-            'violet': {
-                name: '紫罗兰',
-                light: { '--accent-color': '#8b5cf6', '--accent-bg': '#f3efff', '--button-text': '#ffffff' },
-                dark: { '--accent-color': '#d8b4fe', '--accent-bg': '#2c1e45', '--button-text': '#0a0a0a' }
-            }
-        };
-
-        function hexToRgb(hex) {
-            let r = 0, g = 0, b = 0;
-            if (hex.length === 4) {
-                r = parseInt(hex[1] + hex[1], 16);
-                g = parseInt(hex[2] + hex[2], 16);
-                b = parseInt(hex[3] + hex[3], 16);
-            } else if (hex.length === 7) {
-                r = parseInt(hex[1] + hex[2], 16);
-                g = parseInt(hex[3] + hex[4], 16);
-                b = parseInt(hex[5] + hex[6], 16);
-            }
-            return `${r}, ${g}, ${b}`;
-        }
-        function applyTheme(accentName, modeName) {
-            const palette = colorPalettes[accentName];
-            if (!palette || !palette[modeName]) return;
-            currentAccent = accentName;
-            currentMode = modeName;
-            const modePalette = palette[modeName];
-            const root = document.documentElement;
-            const body = document.body;
-            body.setAttribute('data-mode', modeName);
-            localStorage.setItem(MODE_KEY, modeName);
-            for (const [key, value] of Object.entries(modePalette)) {
-                root.style.setProperty(key, value);
-            }
-            const accentHex = modePalette['--accent-color'];
-            root.style.setProperty('--accent-color-rgb', hexToRgb(accentHex));
-            localStorage.setItem(ACCENT_KEY, accentName);
-            updateModeButton(modeName);
-            updateAccentButtons(accentName);
-        }
-        window.setAccent = function(accentName) {
-            applyTheme(accentName, document.body.getAttribute('data-mode') === 'dark' ? 'dark' : 'light');
-        }
-        window.toggleMode = function() {
-            const newMode = document.body.getAttribute('data-mode') === 'light' ? 'dark' : 'light';
-            applyTheme(currentAccent, newMode);
-        }
-        function updateAccentButtons(activeAccent) {
-            document.querySelectorAll('.theme-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const targetButton = document.getElementById(`accent-${activeAccent}`);
-            if (targetButton) {
-                targetButton.classList.add('active');
-            }
-        }
-        function updateModeButton(activeMode) {
-            const modeText = document.getElementById('mode-text');
-            modeText.textContent = activeMode === 'light' ? '浅色模式' : '深色模式';
-            document.body.setAttribute('data-mode', activeMode);
-        }
-        function updateAnimationButton(enabled) {
-            const animationText = document.getElementById('animation-text');
-            animationText.textContent = enabled ? '已开启' : '已关闭';
-        }
-        window.toggleAnimation = function() {
-            isAnimationEnabled = !isAnimationEnabled;
-            localStorage.setItem(ANIMATION_KEY, isAnimationEnabled);
-            const root = document.documentElement;
-            root.style.setProperty('--animation-state', isAnimationEnabled ? 'running' : 'paused');
-            updateAnimationButton(isAnimationEnabled);
-        }
-
-        function createFloatingElements() { 
-            const container = document.getElementById('floating-container');
-            container.innerHTML = ''; 
-            floatingElements = [];    
-            const particleCount = 60; 
-            const symbols = ['H', 'Cl', 'M', 'V', 'C', '+', '-', '=', 'Na₂CO₃', 'HCl', 'T', 'V', 'μ', 'σ', 'Δ', 'RSD']; 
-            for (let i = 0; i < particleCount; i++) {
-                const element = document.createElement('div');
-                element.classList.add('floating-element');
-                element.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-                const size = Math.random() * 1.3 + 1.2; 
-                element.style.fontSize = `${size}rem`;
-                const initialX = Math.random() * 100;
-                element.style.setProperty('--initial-x-offset', `${initialX}vw`);
-                const duration = Math.random() * 20 + 20;
-                element.style.animationDuration = `${duration}s`;
-                const delay = Math.random() * -duration; 
-                element.style.animationDelay = `${delay}s`;
-                const elementData = { element: element, size: size };
-                floatingElements.push(elementData);
-                container.appendChild(element);
-            }
-        }
-
-        function animateInteraction() { 
-            document.documentElement.style.setProperty('--animation-state', isAnimationEnabled ? 'running' : 'paused');
-            floatingElements.forEach(data => {
-                const el = data.element;
-                const rect = el.getBoundingClientRect();
-                const elementCenterX = rect.left + rect.width / 2;
-                const elementCenterY = rect.top + rect.height / 2;
-                const dx = elementCenterX - mouseX;
-                const dy = elementCenterY - mouseY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                let repelX = 0;
-                let repelY = 0;
-                if (distance < INTERACTION_RADIUS) {
-                    const strength = 1 - (distance / INTERACTION_RADIUS);
-                    const angle = Math.atan2(dy, dx);
-                    repelX = Math.cos(angle) * REPEL_FORCE * strength;
-                    repelY = Math.sin(angle) * REPEL_FORCE * strength;
-                    el.style.transform = `translate(${repelX}px, ${repelY}px)`; 
-                    el.style.opacity = `${0.1 + strength * 0.15}`; 
-                } else {
-                    el.style.opacity = `0.1`;
-                    el.style.transform = `translate(0px, 0px)`; 
-                }
-            });
-            requestAnimationFrame(animateInteraction);
-        }
-
-        window.setMode = function(modeName) {
-            currentMode = modeName;
-            localStorage.setItem(MODE_KEY, modeName);
-            document.getElementById('view-dilution').classList.add('hidden');
-            document.getElementById('view-standardization').classList.add('hidden');
-            document.getElementById(`view-${modeName}`).classList.remove('hidden');
-            document.getElementById('tab-dilution').classList.remove('active-mode');
-            document.getElementById('tab-standardization').classList.remove('active-mode');
-            document.getElementById(`tab-${modeName}`).classList.add('active-mode');
-            hideMessages(true); 
-            if (modeName === 'dilution' && standardizationHistory.length > 0) {
-                const latestRecord = standardizationHistory[0];
-                const avgConc = latestRecord.avgConcentration;
-                if (avgConc) {
-                    document.getElementById('target-concentration').value = avgConc.toFixed(4);
-                    toggleDilutionUnit('conc', 'M');
-                }
-            }
-        }
-
-        function hideMessages(clearResults = false) {
-            document.getElementById('dilution-result-box').classList.add('hidden');
-            document.getElementById('standardization-result-box').classList.add('hidden');
-            document.getElementById('error-box').classList.add('hidden');
-            if (clearResults) {
-                 document.getElementById('required-volume').textContent = '0.00';
-                 document.getElementById('avg-concentration').textContent = '0.0000';
-                 document.getElementById('rsd-value').textContent = '0.00%';
-                 document.getElementById('rsd-warning').classList.add('hidden');
-            }
-        }
-
-        function showError(message) {
-            hideMessages(false);
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('error-box').classList.remove('hidden');
-        }
-        
-        window.toggleDilutionUnit = function(type, unit) {
-            hideMessages(true); 
-            if (type === 'volume') {
-                dilutionVolumeUnit = unit;
-                document.getElementById('V_dilute_unit').value = unit;
-                document.getElementById('volume-unit-mL').classList.toggle('inactive', unit === 'L');
-                document.getElementById('volume-unit-L').classList.toggle('inactive', unit === 'mL');
-            } else if (type === 'conc') {
-                dilutionConcUnit = unit;
-                document.getElementById('C_dilute_unit').value = unit;
-                document.getElementById('conc-unit-M').classList.toggle('inactive', unit === 'W');
-                document.getElementById('conc-unit-W').classList.toggle('inactive', unit === 'M');
-                document.getElementById('target-density-group').style.display = (unit === 'W' ? 'block' : 'none');
-                
-                // 切换单位时重新触发校验，这会连带触发密度估算
-                validateDilutionInputs();
-            }
-        }
-
-        function loadHistory() {
-            const storedDilution = localStorage.getItem(DILUTION_HISTORY_KEY);
-            dilutionHistory = storedDilution ? JSON.parse(storedDilution) : [];
-            const storedStandardization = localStorage.getItem(STANDARDIZATION_HISTORY_KEY);
-            standardizationHistory = storedStandardization ? JSON.parse(storedStandardization) : [];
-            renderHistory(currentMode);
-        }
-
-        function saveHistory(mode) {
-            if (mode === 'dilution') {
-                localStorage.setItem(DILUTION_HISTORY_KEY, JSON.stringify(dilutionHistory));
-            } else if (mode === 'standardization') {
-                localStorage.setItem(STANDARDIZATION_HISTORY_KEY, JSON.stringify(standardizationHistory));
-            }
-            renderHistory(mode);
-        }
-        
-        window.resetConcentration = function() {
-            document.getElementById('conc-molarity-input').value = STANDARD_CONC_MOLARITY.toFixed(3);
-            document.getElementById('conc-density-input').value = STANDARD_DENSITY.toFixed(3);
-            localStorage.removeItem(CUSTOM_CONC_KEY);
-            hideMessages(true); 
-            validateDilutionInputs(); // 触发校验
-        }
-        
-        function convertConcentration(value, fromUnit, toUnit, density) {
-            if (fromUnit === toUnit) return value;
-            if (fromUnit === 'M' && toUnit === 'W') { 
-                return (value * HCL_MOLAR_MASS / 1000 / density) * 100;
-            } else if (fromUnit === 'W' && toUnit === 'M') { 
-                return (value / 100 * density * 1000) / HCL_MOLAR_MASS;
-            }
-            return value;
-        }
-        
-        // --- A4 + 智能估算: 实时输入校验与密度估算 ---
-        window.validateDilutionInputs = function() {
-            hideMessages(); // 隐藏之前的结果
-            
-            const warningEl = document.getElementById('dilution-warning-text');
-            const C_conc_input = parseFloat(document.getElementById('conc-molarity-input').value);
-            const D_conc = parseFloat(document.getElementById('conc-density-input').value);
-            const C_dilute_input_val = parseFloat(document.getElementById('target-concentration').value);
-            // 注意：这里先获取 DOM 元素，不急着获取 value，因为可能需要自动填入
-            const densityInput = document.getElementById('target-density');
-            let D_dilute = parseFloat(densityInput.value);
-            const C_unit = document.getElementById('C_dilute_unit').value;
-            const autoDensityBadge = document.getElementById('auto-density-badge');
-
-            // 智能密度估算逻辑 (Phase 3)
-            if (C_unit === 'W' && !isNaN(C_dilute_input_val) && C_dilute_input_val > 0) {
-                 // 简单的 HCl 密度估算公式: rho ≈ 1 + 0.005 * w% (经验公式)
-                const estimatedRho = 1 + (C_dilute_input_val * 0.005);
-                
-                // 策略：如果当前密度框没有焦点（用户不在手动改），则自动填入
-                if (document.activeElement !== densityInput) {
-                    densityInput.value = estimatedRho.toFixed(3);
-                    D_dilute = estimatedRho; // 更新当前逻辑用的变量
-                    autoDensityBadge.style.display = 'inline'; // 显示自动标记
-                }
-            } else {
-                 autoDensityBadge.style.display = 'none';
-            }
-
-            if (isNaN(C_conc_input) || isNaN(C_dilute_input_val)) {
-                warningEl.classList.add('hidden');
-                return;
-            }
-
-            let C_dilute_M;
-            let isValid = true;
-
-            if (C_unit === 'W') {
-                if (isNaN(D_dilute) || D_dilute <= 0) return; // 密度无效不校验
-                C_dilute_M = convertConcentration(C_dilute_input_val, 'W', 'M', D_dilute);
-            } else {
-                C_dilute_M = C_dilute_input_val;
-            }
-            
-            // 简单校验：稀释后摩尔浓度不能大于原液
-            if (C_dilute_M >= C_conc_input) {
-                isValid = false;
-            }
-
-            if (!isValid) {
-                warningEl.classList.remove('hidden');
-            } else {
-                warningEl.classList.add('hidden');
-            }
-        }
-
-        window.calculateDilution = function() {
-            hideMessages(false);
-            
-            const C_conc_input = document.getElementById('conc-molarity-input').value;
-            const D_conc = parseFloat(document.getElementById('conc-density-input').value);
-            const V_dilute_input = document.getElementById('target-volume').value;
-            const C_dilute_input = document.getElementById('target-concentration').value;
-            const D_dilute = parseFloat(document.getElementById('target-density').value);
-            const V_unit = document.getElementById('V_dilute_unit').value;
-            const C_unit = document.getElementById('C_dilute_unit').value;
-
-            if (isNaN(D_conc) || D_conc <= 0) return showError('请输入有效的浓盐酸密度（D浓），必须大于 0。');
-            if (isNaN(C_conc_input) || parseFloat(C_conc_input) <= 0) return showError('请输入有效的浓盐酸浓度（C浓），必须大于 0。');
-            if (isNaN(V_dilute_input) || parseFloat(V_dilute_input) <= 0) return showError('请输入有效的稀释后体积（V稀），必须大于 0。');
-            if (isNaN(C_dilute_input) || parseFloat(C_dilute_input) <= 0) return showError('请输入有效的稀释后浓度（C稀），必须大于 0。');
-            if (C_unit === 'W' && (isNaN(D_dilute) || D_dilute <= 0)) return showError('选择质量百分比浓度时，必须输入有效的稀释后密度（D稀）。');
-            
-            const C_conc_M = parseFloat(C_conc_input); 
-            const C_dilute_input_val = parseFloat(C_dilute_input); 
-            const V_dilute_input_val = parseFloat(V_dilute_input); 
-            
-            let C_dilute_M;
-            if (C_unit === 'W') {
-                C_dilute_M = convertConcentration(C_dilute_input_val, 'W', 'M', D_dilute);
-                const C_conc_W = convertConcentration(C_conc_M, 'M', 'W', D_conc);
-                if (C_dilute_input_val >= C_conc_W) return showError(`目标稀释浓度 (${C_dilute_input_val.toFixed(2)} %w/w) 必须低于当前浓盐酸的浓度 (${C_conc_W.toFixed(2)} %w/w)。`); 
-            } else {
-                C_dilute_M = C_dilute_input_val;
-                if (C_dilute_M >= C_conc_M) return showError(`目标稀释浓度 (${C_dilute_M.toFixed(3)} M) 必须低于当前设置的浓盐酸浓度 (${C_conc_M.toFixed(3)} M)。`); 
-            }
-
-            let V_dilute_mL = (V_unit === 'L') ? V_dilute_input_val * 1000 : V_dilute_input_val;
-            const V_conc = (C_dilute_M * V_dilute_mL) / C_conc_M;
-
-            document.getElementById('required-volume').textContent = V_conc.toFixed(3);
-            document.getElementById('required-volume-unit').textContent = 'mL'; 
-            document.getElementById('dilution-result-box').classList.remove('hidden');
-            
-            const record = {
-                date: new Date().toISOString(),
-                C_conc: C_conc_M,
-                V_dilute: V_dilute_input_val, 
-                V_unit: V_unit,
-                C_dilute: C_dilute_input_val, 
-                C_unit: C_unit,
-                V_conc: V_conc 
-            };
-            dilutionHistory.unshift(record);
-            saveHistory('dilution');
-        }
-
-        // --- B3: 更新基准物 ---
-        window.updateStandardSubstance = function() {
-            const select = document.getElementById('standard-substance');
-            currentStandardKey = select.value;
-            const standard = STANDARDS[currentStandardKey];
-            
-            document.getElementById('stoich-display').innerHTML = standard.formulaDisplay;
-            document.getElementById('molar-mass-standard').value = standard.molarMass.toFixed(2);
-            
-            hideMessages(true);
-        }
-
-        window.resetMolarMass = function() {
-            // 重置为当前选中基准物的默认质量
-            document.getElementById('molar-mass-standard').value = STANDARDS[currentStandardKey].molarMass.toFixed(2);
-            document.getElementById('rsd-limit').value = '0.20';
-            localStorage.removeItem(CUSTOM_RSD_KEY);
-            hideMessages(true);
-        }
-
-        window.calculateStandardization = function() {
-            hideMessages(false); 
-            
-            const M_standard = parseFloat(document.getElementById('molar-mass-standard').value);
-            const RSD_limit = parseFloat(document.getElementById('rsd-limit').value); 
-
-            if (isNaN(M_standard) || M_standard <= 0) return showError('请输入有效的基准物摩尔质量，必须大于 0。');
-            if (isNaN(RSD_limit) || RSD_limit <= 0) return showError('请输入有效的 RSD 验收标准，必须大于 0。');
-            
-            localStorage.setItem(CUSTOM_RSD_KEY, RSD_limit);
-
-            const trials = [];
-            for (let i = 1; i <= 3; i++) {
-                const massInput = document.getElementById(`mass-${i}`).value;
-                const volumeInput = document.getElementById(`volume-${i}`).value;
-                const mass = parseFloat(massInput);
-                const volume = parseFloat(volumeInput);
-
-                if ((!massInput && !volumeInput) || (isNaN(mass) && isNaN(volume))) continue; 
-                if (isNaN(mass) || mass <= 0) return showError(`第 ${i} 次测定: 质量输入无效 (必须 > 0)。`);
-                if (isNaN(volume) || volume <= 0) return showError(`第 ${i} 次测定: 体积输入无效 (必须 > 0)。`);
-                
-                // 公式： C_HCl = (2 * mass) / (M * V * 10^-3)
-                // 注意：Na2CO3 和 Borax 与 HCl 反应化学计量均为 2:1
-                const concentration = (2 * mass) / (M_standard * volume * 0.001);
-
-                trials.push({ id: i, mass: mass, volume: volume, concentration: concentration });
-            }
-
-            if (trials.length < 2) return showError('至少需要 2 组有效数据才能计算平均浓度和偏差。');
-
-            const sumC = trials.reduce((sum, t) => sum + t.concentration, 0);
-            const avgConcentration = sumC / trials.length;
-            const sumDev = trials.reduce((sum, t) => sum + Math.abs(t.concentration - avgConcentration), 0);
-            const avgDeviation = sumDev / trials.length;
-            const RSD = (avgDeviation / avgConcentration) * 100;
-
-            renderStandardizationResults(trials, avgConcentration, RSD, RSD_limit); 
-
-            const record = {
-                date: new Date().toISOString(),
-                standard: STANDARDS[currentStandardKey].name, // 记录使用的基准物
-                M_standard: M_standard,
-                trials: trials,
-                avgConcentration: avgConcentration,
-                RSD: RSD,
-                RSD_limit: RSD_limit 
-            };
-            standardizationHistory.unshift(record);
-            saveHistory('standardization');
-        }
-
-        function renderStandardizationResults(trials, avgConcentration, RSD, RSD_limit) {
-            let bodyHtml = '';
-            trials.forEach(t => {
-                bodyHtml += `
-                    <tr>
-                        <td>${t.id}</td>
-                        <td>${t.mass.toFixed(4)}</td>
-                        <td>${t.volume.toFixed(2)}</td>
-                        <td class="font-medium text-primary">${t.concentration.toFixed(4)}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('standardization-data-body').innerHTML = bodyHtml;
-            document.getElementById('avg-concentration').textContent = avgConcentration.toFixed(4);
-            document.getElementById('rsd-value').textContent = `${RSD.toFixed(2)}%`;
-            
-            const rsdWarning = document.getElementById('rsd-warning');
-            const rsdLimitDisplay = document.getElementById('rsd-limit-display');
-            rsdLimitDisplay.textContent = `${RSD_limit.toFixed(2)}%`;
-            
-            if (RSD > RSD_limit) {
-                rsdWarning.classList.remove('hidden');
-                document.getElementById('rsd-value').style.color = 'var(--color-error)'; 
-            } else {
-                rsdWarning.classList.add('hidden');
-                 document.getElementById('rsd-value').style.color = 'var(--accent-color)'; 
-            }
-            
-            document.getElementById('standardization-result-box').classList.remove('hidden');
-        }
-        
-        function renderHistory(mode) {
-            if (mode === 'dilution') {
-                renderDilutionHistory();
-            } else if (mode === 'standardization') {
-                renderStandardizationHistory();
-            }
-        }
-        
-        function renderDilutionHistory() {
-            const container = document.getElementById('dilution-history-container');
-            if (dilutionHistory.length === 0) {
-                container.innerHTML = `<p class="text-center text-secondary py-4 transition-colors duration-500">暂无稀释配制记录。</p>`;
-                return;
-            }
-            let html = `
-                <table class="history-table text-sm">
-                    <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>C<sub>浓</sub> (M)</th>
-                            <th>V<sub>稀</sub></th>
-                            <th>C<sub>稀</sub></th>
-                            <th>V<sub>浓</sub> (mL)</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            dilutionHistory.forEach((record, index) => {
-                const date = new Date(record.date).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const V_dilute_display = `${record.V_dilute.toFixed(1)} ${record.V_unit}`;
-                const C_dilute_display = `${record.C_dilute.toFixed(3)} ${record.C_unit}`;
-                
-                html += `
-                    <tr class="hover:bg-accent-bg hover:opacity-70 transition-colors duration-300">
-                        <td>${date}</td>
-                        <td>${record.C_conc.toFixed(3)} M</td>
-                        <td>${V_dilute_display}</td>
-                        <td>${C_dilute_display}</td>
-                        <td class="font-bold text-[var(--accent-color)]">${record.V_conc.toFixed(3)}</td>
-                        <td>
-                            <button onclick="deleteRecord('dilution', ${index})"
-                                class="text-[var(--color-error)] hover:opacity-80 transition duration-150 active-scale-98">
-                                删除
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
-        function renderStandardizationHistory() {
-            const container = document.getElementById('standardization-history-container');
-            if (standardizationHistory.length === 0) {
-                container.innerHTML = `<p class="text-center text-secondary py-4 transition-colors duration-500">暂无浓度标定记录。</p>`;
-                return;
-            }
-            
-            const getTrialData = (record, trialIndex) => {
-                const trial = record.trials[trialIndex];
-                if (trial) {
-                    return {
-                        mass: trial.mass.toFixed(4),
-                        volume: trial.volume.toFixed(2),
-                        concentration: trial.concentration.toFixed(4)
-                    };
-                }
-                return { mass: '-', volume: '-', concentration: '-' };
-            };
-            
-            let html = `
-                <table class="history-table text-xs">
-                    <thead>
-                        <tr>
-                            <th rowspan="2">时间</th>
-                            <th rowspan="2">基准物</th>
-                            <th rowspan="2">平均 C<sub>HCl</sub> (M)</th>
-                            <th rowspan="2">RSD (%)</th>
-                            <th colspan="3" class="border-b-2">第 1 次测定</th>
-                            <th colspan="3" class="border-b-2">第 2 次测定</th>
-                            <th colspan="3" class="border-b-2">第 3 次测定</th>
-                            <th rowspan="2">操作</th>
-                        </tr>
-                        <tr>
-                            <th>m</th><th>V</th><th>C</th>
-                            <th>m</th><th>V</th><th>C</th>
-                            <th>m</th><th>V</th><th>C</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            standardizationHistory.forEach((record, index) => {
-                const date = new Date(record.date).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const trial1 = getTrialData(record, 0);
-                const trial2 = getTrialData(record, 1);
-                const trial3 = getTrialData(record, 2);
-                const rsdColor = (record.RSD > record.RSD_limit) ? 'text-[var(--color-error)]' : 'text-[var(--accent-color)]';
-                // 兼容旧数据：如果 record.standard 不存在，默认为 Na2CO3
-                const standardName = record.standard ? record.standard : 'Na₂CO₃';
-
-                html += `
-                    <tr class="hover:bg-accent-bg hover:opacity-70 transition-colors duration-300">
-                        <td>${date}</td>
-                        <td class="text-xs">${standardName}</td>
-                        <td class="font-bold text-[var(--accent-color)]">${record.avgConcentration.toFixed(4)}</td>
-                        <td class="${rsdColor}">${record.RSD.toFixed(2)}</td>
-
-                        <td class="whitespace-nowrap">${trial1.mass}</td>
-                        <td class="whitespace-nowrap">${trial1.volume}</td>
-                        <td class="whitespace-nowrap">${trial1.concentration}</td>
-
-                        <td class="whitespace-nowrap">${trial2.mass}</td>
-                        <td class="whitespace-nowrap">${trial2.volume}</td>
-                        <td class="whitespace-nowrap">${trial2.concentration}</td>
-
-                        <td class="whitespace-nowrap">${trial3.mass}</td>
-                        <td class="whitespace-nowrap">${trial3.volume}</td>
-                        <td class="whitespace-nowrap">${trial3.concentration}</td>
-
-                        <td>
-                            <button onclick="deleteRecord('standardization', ${index})"
-                                class="text-[var(--color-error)] hover:opacity-80 transition duration-150 active-scale-98">
-                                删除
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
-        window.deleteRecord = function(mode, index) {
-            if (mode === 'dilution') {
-                dilutionHistory.splice(index, 1);
-            } else if (mode === 'standardization') {
-                standardizationHistory.splice(index, 1);
-            }
-            saveHistory(mode);
-            hideMessages(true);
-        }
-
-        window.exportCSV = function(mode) {
-            let historyData, filename, headers;
-            if (mode === 'dilution') {
-                historyData = dilutionHistory;
-                filename = 'HCl_Dilution_History';
-                headers = "时间,浓盐酸浓度 C浓 (M),稀释后体积 V稀 (原始值),V稀 单位,目标浓度 C稀 (原始值),C稀 单位,所需浓盐酸体积 V浓 (mL)\n";
-            } else if (mode === 'standardization') {
-                historyData = standardizationHistory;
-                filename = 'HCl_Standardization_History';
-                headers = "时间,基准物,平均 C_HCl (M),RSD (%),RSD 限制 (%),";
-                for(let i = 1; i <= 3; i++) {
-                    headers += `测定${i}-m (g),测定${i}-V (mL),测定${i}-C (M),`;
-                }
-                headers = headers.slice(0, -1) + "\n"; 
-            } else {
-                return showError("无效的导出模式。");
-            }
-            
-            if (historyData.length === 0) return showError("没有可导出的数据！");
-            
-            let csvContent = headers;
-            historyData.forEach(record => {
-                const dateString = new Date(record.date).toLocaleString('zh-CN');
-                let row = [`"${dateString}"`];
-
-                if (mode === 'dilution') {
-                    row.push(
-                        record.C_conc.toFixed(3), 
-                        record.V_dilute.toFixed(3), record.V_unit, 
-                        record.C_dilute.toFixed(4), record.C_unit, 
-                        record.V_conc.toFixed(3)
-                    );
-                } else if (mode === 'standardization') {
-                    const standardName = record.standard ? record.standard : 'Na₂CO₃';
-                    row.push(standardName, record.avgConcentration.toFixed(4), record.RSD.toFixed(2), record.RSD_limit.toFixed(2));
-                    for (let i = 0; i < 3; i++) {
-                        const trial = record.trials[i] || {};
-                        row.push(
-                            trial.mass ? trial.mass.toFixed(4) : '', 
-                            trial.volume ? trial.volume.toFixed(2) : '', 
-                            trial.concentration ? trial.concentration.toFixed(4) : ''
-                        );
-                    }
-                }
-                csvContent += row.join(",") + "\n";
-            });
-
-            const BOM = "\ufeff";
-            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', filename + '_' + new Date().toISOString().substring(0, 10) + '.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link); 
-            URL.revokeObjectURL(url); 
-        }
-
-        // --- A5: 复制功能 (适用于移动端和桌面端) ---
-        window.copyResult = function(element) {
-            const text = element.innerText;
-            // 创建一个临时 textarea 元素，这在多数浏览器兼容性最好
-            const el = document.createElement('textarea');
-            el.value = text;
-            el.setAttribute('readonly', '');
-            el.style.position = 'absolute';
-            el.style.left = '-9999px';
-            document.body.appendChild(el);
-            
-            const selected =  document.getSelection().rangeCount > 0 ? document.getSelection().getRangeAt(0) : false;
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            
-            if (selected) {
-                document.getSelection().removeAllRanges();
-                document.getSelection().addRange(selected);
-            }
-            
-            // 显示 Toast
-            const toast = document.getElementById('toast-notification');
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // 初始化设置
-            document.getElementById('conc-molarity-input').value = STANDARD_CONC_MOLARITY.toFixed(3);
-            document.getElementById('conc-density-input').value = STANDARD_DENSITY.toFixed(3);
-            // 默认基准物
-            updateStandardSubstance();
-            document.getElementById('rsd-limit').value = '0.20'; 
-            
-            // 加载本地存储配置
-            const savedConc = localStorage.getItem(CUSTOM_CONC_KEY);
-            if (savedConc) document.getElementById('conc-molarity-input').value = parseFloat(savedConc).toFixed(3);
-             const savedRSD = localStorage.getItem(CUSTOM_RSD_KEY);
-            if (savedRSD) document.getElementById('rsd-limit').value = parseFloat(savedRSD).toFixed(2);
-            
-            // 绑定事件监听
-            document.getElementById('conc-molarity-input').addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                if (!isNaN(val) && val > 0) localStorage.setItem(CUSTOM_CONC_KEY, val);
-                validateDilutionInputs();
-            });
-            document.getElementById('conc-density-input').addEventListener('input', () => validateDilutionInputs());
-            document.getElementById('rsd-limit').addEventListener('input', (e) => {
-                 const val = parseFloat(e.target.value);
-                if (!isNaN(val) && val > 0) localStorage.setItem(CUSTOM_RSD_KEY, val);
-                hideMessages(true);
-            });
-
-            loadHistory(); 
-
-            let savedAccent = localStorage.getItem(ACCENT_KEY) || 'organic';
-            let savedMode = localStorage.getItem(MODE_KEY) || 'dilution';
-            let savedAnim = localStorage.getItem(ANIMATION_KEY);
-            isAnimationEnabled = (savedAnim === null || savedAnim === 'true'); 
-            
-            if (!colorPalettes[savedAccent]) savedAccent = 'organic';
-            if (savedMode !== 'dilution' && savedMode !== 'standardization') savedMode = 'dilution';
-            
-            applyTheme(savedAccent, localStorage.getItem(MODE_KEY) || 
-                       (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-            setMode(savedMode);
-
-            toggleDilutionUnit('volume', 'mL');
-            toggleDilutionUnit('conc', 'M');
-            
-            createFloatingElements();
-            animateInteraction(); 
-            
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            });
-            
-            // 回车键支持
-            const volInput = document.getElementById('target-volume');
-            const concInput = document.getElementById('target-concentration');
-            const dilutionBtn = document.getElementById('calculate-dilution-btn');
-            if (volInput) volInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') concInput.focus(); });
-            if (concInput) concInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') dilutionBtn.click(); });
-        });
-        
-        // --- Phase 4: Mobile Swipe Support ---
-        let touchStartX = 0;
-        let touchStartY = 0;
-        
-        // Use passive listeners to ensure scrolling performance isn't affected
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, { passive: true });
-        
-        document.addEventListener('touchend', (e) => {
-            const touchEndX = e.changedTouches[0].screenX;
-            const touchEndY = e.changedTouches[0].screenY;
-            handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
-        }, { passive: true });
-        
-        function handleSwipe(startX, startY, endX, endY) {
-            const diffX = endX - startX;
-            const diffY = endY - startY;
-            
-            // Thresholds: Min distance 60px, Horizontal dominant
-            if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
-                if (diffX > 0) {
-                    // Swipe Right -> Go to Left Tab (Dilution)
-                    if (currentMode !== 'dilution') setMode('dilution');
-                } else {
-                    // Swipe Left -> Go to Right Tab (Standardization)
-                    if (currentMode !== 'standardization') setMode('standardization');
-                }
-            }
-        }
-
-    </script>
 </body>
 </html>
