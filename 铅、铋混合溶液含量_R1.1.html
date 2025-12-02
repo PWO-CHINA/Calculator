@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>铅铋合金含量测定计算器 (EDTA连续滴定法)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 优化排版层级 - 改用系统默认字体栈 */
+        :root {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            --bg-canvas: #f0f5f9;
+            --bg-surface: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6b7280;
+            --accent-color: #7c3aed; /* 默认为紫色 */
+            --accent-color-dark: #6d28d9; /* 深色用于渐变 */
+            --accent-bg: #f5f3ff;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --border-light: #e0e0e0;
+            --button-text: #ffffff;
+            --accent-color-rgb: 124, 58, 237;
+            --animation-state: running;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.08) 0%, 
+                var(--bg-canvas) 60%
+            );
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 1.5rem 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .main-calculator-card {
+            position: relative;
+            z-index: 20;
+            width: 90%;
+            max-width: 800px;
+            margin: 0;
+            margin-bottom: 4rem; 
+        }
+
+        /* --- 动画背景 --- */
+        #floating-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none; 
+            z-index: 1;
+        }
+        
+        .floating-element {
+            position: absolute;
+            top: 0;
+            left: var(--random-x);
+            color: var(--accent-color);
+            opacity: 0.12;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            animation: waterfall linear infinite;
+            animation-play-state: var(--animation-state);
+            user-select: none;
+            font-family: 'Times New Roman', serif;
+            will-change: transform;
+            transform: translate3d(0, -100vh, 0); 
+        }
+
+        @keyframes waterfall {
+            0% { transform: translate3d(0, -100vh, 0); }
+            100% { transform: translate3d(0, 150vh, 0); }
+        }
+        
+        /* --- 深色模式 --- */
+        body[data-mode="dark"] {
+            --bg-canvas: #0f172a;           
+            --bg-surface: #1e293b;          
+            --text-primary: #f8fafc;        
+            --text-secondary: #94a3b8;      
+            --color-error: #f87171;         
+            --border-light: #334155;        
+            --button-text: #0f172a;         
+             background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.15) 0%, 
+                var(--bg-canvas) 50%
+            );
+        }
+
+        /* 通用类 */
+        .bg-surface { background-color: var(--bg-surface); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-light { border-color: var(--border-light); }
+        .accent-bg { background-color: var(--accent-bg); }
+        
+        /* 输入框样式 */
+        .input-field {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+            background-color: var(--bg-surface);
+            transition: border-color 0.3s, background-color 0.5s;
+        }
+        .input-field:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.3);
+            outline: none;
+        }
+
+        .theme-button { 
+            position: relative; 
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .theme-button:hover {
+            transform: scale(1.1);
+        }
+        .theme-button.active {
+            transform: scale(1.15);
+            box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
+        }
+
+        /* 表格样式 */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .result-table th, .result-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+        .result-table th {
+            background-color: var(--accent-bg); 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .result-table tr:hover td {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+
+        /* 按钮动效 - 优化版 */
+        .calculate-button {
+            /* 使用渐变背景，更具现代感 */
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color-dark) 100%);
+            color: var(--button-text); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            font-weight: 700;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .calculate-button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+            pointer-events: none;
+        }
+        .calculate-button:hover {
+            filter: brightness(1.1); 
+            box-shadow: 0 8px 20px -4px rgba(var(--accent-color-rgb), 0.5); 
+            transform: translateY(-2px); 
+        }
+        .calculate-button:active {
+            filter: brightness(0.95); 
+            transform: scale(0.98); 
+            box-shadow: 0 4px 10px -2px rgba(var(--accent-color-rgb), 0.3);
+        }
+        .active-scale-98:active { transform: scale(0.98); }
+
+        .main-title { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1.2; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+
+        /* Toast 提示样式 */
+        #toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .copyable-result {
+            cursor: pointer;
+            border-bottom: 1px dashed var(--accent-color);
+        }
+        .copyable-result:active { opacity: 0.7; }
+
+        .text-warning { color: var(--color-warning); }
+        .text-error { color: var(--color-error); }
+        
+        /* 针对小屏幕优化表格 */
+        @media (max-width: 640px) {
+            .result-table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+
+        /* --- 移动端横向滚动优化 --- */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .dot-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--border-light);
+            transition: all 0.3s ease;
+        }
+        .dot-indicator.active {
+            background-color: var(--accent-color);
+            transform: scale(1.2);
+            width: 20px;
+            border-radius: 4px;
+        }
+
+        @keyframes swipe-hint {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(10px); opacity: 1; }
+        }
+        .swipe-hint-icon {
+            animation: swipe-hint 1.5s infinite;
+        }
+
+        /* 历史记录展开样式 */
+        .history-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+        }
+        .history-details.open {
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+        .history-summary-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .history-summary-row:hover {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+        .expand-icon {
+            transition: transform 0.3s;
+        }
+        .expand-icon.open {
+            transform: rotate(180deg);
+        }
+        
+        /* 警告动画 */
+        @keyframes pulse-error {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .data-warning {
+            animation: pulse-error 2s infinite;
+            color: var(--color-error);
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body data-mode="light">
+    
+    <div id="floating-container"></div>
+    
+    <!-- Toast Notification -->
+    <div id="toast-notification">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>内容已复制</span>
+    </div>
+
+    <div class="main-calculator-card bg-surface shadow-2xl rounded-2xl p-6 sm:p-8 space-y-6 border-t-8 border-[var(--accent-color)] transition-colors duration-500">
+
+        <!-- 顶部控制区 -->
+        <div class="flex flex-col space-y-4 pb-4 border-b border-[var(--border-light)] transition-colors duration-500">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-wrap items-center space-x-3">
+                    <span class="text-sm font-medium text-[var(--text-secondary)]">界面模式:</span>
+                    <button onclick="toggleMode()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="mode-text">浅色</span>
+                    </button>
+                    <button onclick="toggleAnimation()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="animation-text">动效开</span>
+                    </button>
+                </div>
+                <!-- 主题色选择 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="setAccent('purple')" class="theme-button w-6 h-6 rounded-full active" style="background: #7c3aed;" title="紫罗兰 (二甲酚橙)"></button>
+                    <button onclick="setAccent('emerald')" class="theme-button w-6 h-6 rounded-full" style="background: #059669;" title="祖母绿"></button>
+                    <button onclick="setAccent('blue')" class="theme-button w-6 h-6 rounded-full" style="background: #2563eb;" title="实验室蓝"></button>
+                    <button onclick="setAccent('amber')" class="theme-button w-6 h-6 rounded-full" style="background: #f59e0b;" title="亮黄色/橙色"></button>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-2">
+                <h1 class="main-title text-primary">EDTA 标准溶液滴定测定<br>铅、铋混合溶液含量</h1>
+                <p class="text-[var(--text-secondary)] text-sm">pH控制法连续滴定 (Bi³⁺ at pH≈1, Pb²⁺ at pH≈5-6)</p>
+            </div>
+        </div>
+        
+        <!-- 全局参数设置 -->
+        <div class="bg-[var(--accent-bg)] p-4 rounded-lg border border-[var(--border-light)] transition-colors duration-500">
+            <h2 class="section-title">🧪 实验公共参数</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="sm:col-span-2 lg:col-span-1">
+                    <label class="block text-xs font-bold text-primary mb-1">EDTA 浓度 c (mol/L)</label>
+                    <input type="number" id="c-edta" min="0" oninput="if(value<0)value=0" placeholder="0.0500" class="w-full rounded-lg p-2 border input-field tabular-nums" onchange="formatInputSigFigs(this, 4)">
+                </div>
+                <div class="sm:col-span-2 lg:col-span-1">
+                    <label class="block text-xs font-bold text-primary mb-1">试样总质量 m (g)</label>
+                    <input type="number" id="m-sample" min="0" oninput="if(value<0)value=0" placeholder="0.6000" class="w-full rounded-lg p-2 border input-field tabular-nums" onchange="formatInputSigFigs(this, 4)">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">定容体积 (mL)</label>
+                    <input type="number" id="v-total" min="0" oninput="if(value<0)value=0" value="100.0" class="w-full rounded-lg p-2 border input-field tabular-nums">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">移取体积 (mL)</label>
+                    <input type="number" id="v-pipette" min="0" oninput="if(value<0)value=0" value="25.00" class="w-full rounded-lg p-2 border input-field tabular-nums">
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据输入区 (3次测定 - 移动端支持横向滑动) -->
+        <div class="space-y-4">
+            <div class="flex justify-between items-end">
+                <h2 class="section-title flex items-center gap-2">
+                    📊 平行测定数据录入
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--accent-color)] lg:hidden swipe-hint-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </h2>
+                <span class="text-xs text-[var(--text-secondary)]">读数精确到 0.01 mL</span>
+            </div>
+            
+            <div id="trials-container" class="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory hide-scrollbar pb-2">
+                <!-- 动态生成的输入卡片 -->
+            </div>
+            
+            <div id="trial-indicators" class="flex justify-center space-x-2 lg:hidden">
+                <!-- JS 填充 dots -->
+            </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="calculateResults()" class="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-lg calculate-button mt-4">
+            计算质量分数 & 准确性判定
+        </button>
+
+        <!-- 结果展示区 -->
+        <div id="result-section" class="hidden space-y-6">
+            
+            <!-- 准确性警告区 -->
+            <div id="accuracy-alert" class="hidden p-4 bg-red-50 border-l-4 border-red-500 rounded-r shadow-sm flex items-start">
+                <svg class="h-6 w-6 text-red-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                    <h4 class="text-red-700 font-bold text-sm">数据异常警告</h4>
+                    <p class="text-red-600 text-xs mt-1">检测到计算得出的(铅+铋)理论质量总和大于您称量的试样质量！请检查：<br>1. 称量质量输入是否正确<br>2. 滴定管读数是否存在误差<br>3. EDTA 浓度是否准确</p>
+                </div>
+            </div>
+
+            <!-- 统计结果卡片 (移到前面) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative overflow-hidden" id="card-bi">
+                    <div class="absolute top-0 right-0 p-2 opacity-5 text-4xl font-serif font-bold">Bi</div>
+                    <h3 class="font-bold text-[var(--accent-color)] mb-2 border-b pb-2">铋 (Bi) 分析结果</h3>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-secondary">平均浓度:</span>
+                        <span class="font-bold text-primary tabular-nums" id="avg-conc-bi">-</span>
+                    </div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-secondary">相对标准偏差 (RSD):</span>
+                        <span class="font-bold text-primary tabular-nums" id="rsd-bi">-</span>
+                    </div>
+                    <div class="flex justify-between mt-2 pt-2 border-t border-dashed border-[var(--border-light)]">
+                        <span class="text-sm font-bold text-primary">质量分数 (%):</span>
+                        <span class="font-bold text-[var(--accent-color)] text-lg tabular-nums copyable-result" onclick="copyText(this)" id="final-percent-bi">-</span>
+                    </div>
+                </div>
+                <div class="p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative overflow-hidden" id="card-pb">
+                    <div class="absolute top-0 right-0 p-2 opacity-5 text-4xl font-serif font-bold">Pb</div>
+                    <h3 class="font-bold text-[var(--accent-color)] mb-2 border-b pb-2">铅 (Pb) 分析结果</h3>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-secondary">平均浓度:</span>
+                        <span class="font-bold text-primary tabular-nums" id="avg-conc-pb">-</span>
+                    </div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-secondary">相对标准偏差 (RSD):</span>
+                        <span class="font-bold text-primary tabular-nums" id="rsd-pb">-</span>
+                    </div>
+                    <div class="flex justify-between mt-2 pt-2 border-t border-dashed border-[var(--border-light)]">
+                        <span class="text-sm font-bold text-primary">质量分数 (%):</span>
+                        <span class="font-bold text-[var(--accent-color)] text-lg tabular-nums copyable-result" onclick="copyText(this)" id="final-percent-pb">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 表格 (移到后面) -->
+            <div class="border-t-2 border-[var(--accent-color)] pt-6 mt-6">
+                <h2 class="section-title text-center mb-4">📝 数据记录与处理表</h2>
+                <div class="overflow-x-auto rounded-lg shadow-sm border border-[var(--border-light)]">
+                    <table class="result-table bg-surface">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%">测定次数</th>
+                                <th style="width: 23%">1</th>
+                                <th style="width: 23%">2</th>
+                                <th style="width: 23%">3</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-table-body">
+                            <!-- JS 填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- 历史记录控制 -->
+        <div class="pt-6 border-t border-[var(--border-light)]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title mb-0">💾 历史记录</h2>
+                <div class="space-x-2">
+                     <button onclick="exportCSV()" class="px-3 py-1.5 bg-[#10b981] text-white rounded text-sm font-medium hover:bg-[#059669] transition active-scale-98">
+                        导出 CSV
+                    </button>
+                    <button onclick="clearHistory()" class="px-3 py-1.5 bg-[var(--color-error)] text-white rounded text-sm font-medium hover:opacity-90 transition active-scale-98">
+                        清空
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-[var(--text-secondary)] mb-4">点击记录行可查看/收起完整数据表</p>
+            <div id="history-container" class="space-y-3">
+                <!-- 历史卡片 -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 核心逻辑 ---
+        
+        const HISTORY_KEY = 'pbBiTitrationHistory_v2';
+        let historyData = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        
+        let lastSubmissionHash = "";
+
+        // 原子量常量 (g/mol)
+        const ATOMIC_WEIGHT_Bi = 208.98;
+        const ATOMIC_WEIGHT_Pb = 207.2;
+
+        function roundToSigFigs(num, sigFigs) {
+            if (num === 0) return "0.0000".substring(0, sigFigs + 1);
+            if (isNaN(num)) return "-";
+
+            const absNum = Math.abs(num);
+            const d = Math.floor(Math.log10(absNum));
+            const shift = sigFigs - 1 - d;
+            const magnitude = Math.pow(10, shift);
+            const shifted = num * magnitude;
+
+            let roundedShifted;
+            const integerPart = Math.floor(shifted);
+            const fractionalPart = shifted - integerPart;
+            
+            const epsilon = 1e-10;
+
+            if (Math.abs(fractionalPart - 0.5) < epsilon) {
+                if (integerPart % 2 === 0) {
+                    roundedShifted = integerPart;
+                } else {
+                    roundedShifted = integerPart + 1;
+                }
+            } else if (fractionalPart > 0.5) {
+                roundedShifted = Math.ceil(shifted);
+            } else {
+                roundedShifted = Math.floor(shifted);
+            }
+
+            const result = roundedShifted / magnitude;
+            const decimalPlaces = Math.max(0, shift);
+            return result.toFixed(decimalPlaces);
+        }
+
+        function formatInputSigFigs(input, sigFigs) {
+            const val = parseFloat(input.value);
+            if (!isNaN(val) && val !== 0) {
+                input.value = roundToSigFigs(val, sigFigs);
+            }
+        }
+
+        function initTrials() {
+            const container = document.getElementById('trials-container');
+            const indicatorsContainer = document.getElementById('trial-indicators');
+            let html = '';
+            let indicatorsHtml = '';
+
+            for (let i = 1; i <= 3; i++) {
+                html += `
+                <div class="min-w-[85%] sm:min-w-[45%] lg:min-w-0 lg:w-full flex-shrink-0 snap-center p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative trial-card transition-all duration-300">
+                    <div class="absolute top-2 right-2 text-xs font-bold text-[var(--accent-color)] opacity-30 text-4xl select-none">${i}</div>
+                    <h3 class="font-bold text-primary mb-3 text-sm">第 ${i} 次测定</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">初读数 V<sub>初</sub> (mL)</label>
+                            <input type="number" id="v-start-${i}" min="0" oninput="if(value<0)value=0; liveCalc(${i})" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">第一终点 V<sub>1</sub> (pH≈1, Bi)</label>
+                            <input type="number" id="v-end1-${i}" min="0" oninput="if(value<0)value=0; liveCalc(${i})" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="mL">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">第二终点 V<sub>2</sub> (pH≈5, Pb)</label>
+                            <input type="number" id="v-end2-${i}" min="0" oninput="if(value<0)value=0; liveCalc(${i})" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="mL">
+                        </div>
+                        <div class="pt-2 border-t border-dashed border-[var(--border-light)] text-xs space-y-1">
+                            <div class="flex justify-between"><span class="text-secondary">消耗 V<sub>Bi</sub> (mL):</span> <span id="disp-vBi-${i}" class="tabular-nums font-bold text-[var(--accent-color)]">-</span></div>
+                            <div class="flex justify-between"><span class="text-secondary">消耗 V<sub>Pb</sub> (mL):</span> <span id="disp-vPb-${i}" class="tabular-nums font-bold text-[var(--accent-color)]">-</span></div>
+                        </div>
+                    </div>
+                </div>`;
+                
+                indicatorsHtml += `<div class="dot-indicator ${i === 1 ? 'active' : ''}" data-index="${i-1}"></div>`;
+            }
+            container.innerHTML = html;
+            indicatorsContainer.innerHTML = indicatorsHtml;
+
+            setupScrollObserver(container);
+        }
+
+        function setupScrollObserver(container) {
+            const cards = container.querySelectorAll('.trial-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const index = Array.from(cards).indexOf(entry.target);
+                        updateDots(index);
+                    }
+                });
+            }, { root: container, threshold: 0.6 });
+
+            cards.forEach(card => observer.observe(card));
+        }
+
+        function updateDots(activeIndex) {
+            const dots = document.querySelectorAll('.dot-indicator');
+            dots.forEach((dot, idx) => {
+                if (idx === activeIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function liveCalc(index) {
+            const vStart = parseFloat(document.getElementById(`v-start-${index}`).value);
+            const vEnd1 = parseFloat(document.getElementById(`v-end1-${index}`).value);
+            const vEnd2 = parseFloat(document.getElementById(`v-end2-${index}`).value);
+            
+            const dispVBi = document.getElementById(`disp-vBi-${index}`);
+            const dispVPb = document.getElementById(`disp-vPb-${index}`);
+            
+            if (!isNaN(vStart) && !isNaN(vEnd1)) {
+                let vBi = vEnd1 - vStart;
+                dispVBi.textContent = vBi.toFixed(2);
+                dispVBi.className = vBi < 0 ? 'text-red-500 font-bold tabular-nums' : 'text-[var(--accent-color)] font-bold tabular-nums';
+            } else {
+                dispVBi.textContent = '-';
+            }
+
+            if (!isNaN(vEnd1) && !isNaN(vEnd2)) {
+                let vPb = vEnd2 - vEnd1; 
+                dispVPb.textContent = vPb.toFixed(2);
+                dispVPb.className = vPb < 0 ? 'text-red-500 font-bold tabular-nums' : 'text-[var(--accent-color)] font-bold tabular-nums';
+            } else {
+                dispVPb.textContent = '-';
+            }
+        }
+
+        // RSD 计算辅助函数
+        function calcRSD(arr) {
+            if (arr.length < 2) return 0;
+            const mean = arr.reduce((a, b) => a + b) / arr.length;
+            const sumSqDiff = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
+            const stdDev = Math.sqrt(sumSqDiff / (arr.length - 1));
+            return (stdDev / mean) * 100;
+        }
+        
+        function calcMean(arr) {
+            return arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+        }
+
+        function calculateResults() {
+            const cEDTA = parseFloat(document.getElementById('c-edta').value);
+            const mSample = parseFloat(document.getElementById('m-sample').value);
+            const vTotal = parseFloat(document.getElementById('v-total').value);
+            const vPipette = parseFloat(document.getElementById('v-pipette').value);
+            
+            if (isNaN(cEDTA) || cEDTA <= 0) return showToast("请输入有效的 EDTA 浓度", true);
+            if (isNaN(mSample) || mSample <= 0) return showToast("请输入有效的试样质量", true);
+            if (isNaN(vTotal) || vTotal <= 0) return showToast("定容体积无效", true);
+            if (isNaN(vPipette) || vPipette <= 0) return showToast("移取体积无效", true);
+
+            let results = [];
+            let validTrials = 0;
+            let rawInputs = { c: cEDTA, m: mSample, vt: vTotal, vp: vPipette, data: [] };
+            
+            let concBiArr = [];
+            let concPbArr = [];
+
+            for (let i = 1; i <= 3; i++) {
+                const vStart = parseFloat(document.getElementById(`v-start-${i}`).value);
+                const vEnd1 = parseFloat(document.getElementById(`v-end1-${i}`).value);
+                const vEnd2 = parseFloat(document.getElementById(`v-end2-${i}`).value);
+                
+                rawInputs.data.push({ s: vStart, e1: vEnd1, e2: vEnd2 });
+
+                if (isNaN(vStart) || isNaN(vEnd1) || isNaN(vEnd2)) {
+                    results.push(null);
+                    continue;
+                }
+                
+                validTrials++;
+
+                const V_Bi = vEnd1 - vStart;
+                const V_Pb = vEnd2 - vEnd1;
+                
+                // 1. 计算摩尔浓度 C (mol/L)
+                // C_metal = C_EDTA * V_metal / V_pipette
+                const concBi = (cEDTA * V_Bi) / vPipette;
+                const concPb = (cEDTA * V_Pb) / vPipette;
+                
+                concBiArr.push(concBi);
+                concPbArr.push(concPb);
+
+                results.push({
+                    vStart, vEnd1, vEnd2, V_Bi, V_Pb,
+                    concBi, concPb
+                });
+            }
+
+            if (validTrials === 0) return showToast("请至少输入一组完整数据", true);
+            
+            // 2. 统计计算
+            const avgConcBi = calcMean(concBiArr);
+            const rsdBi = calcRSD(concBiArr);
+            
+            const avgConcPb = calcMean(concPbArr);
+            const rsdPb = calcRSD(concPbArr);
+            
+            // 3. 使用平均浓度计算最终质量分数
+            // m_total = C_avg * V_total * M_atomic
+            // percent = m_total / m_sample * 100
+            const totalMolesBi = avgConcBi * (vTotal / 1000); // mol
+            const calcTotalMassBi = totalMolesBi * ATOMIC_WEIGHT_Bi; // g
+            const finalPercentBi = (calcTotalMassBi / mSample) * 100;
+            
+            const totalMolesPb = avgConcPb * (vTotal / 1000); // mol
+            const calcTotalMassPb = totalMolesPb * ATOMIC_WEIGHT_Pb; // g
+            const finalPercentPb = (calcTotalMassPb / mSample) * 100;
+            
+            // 4. 实验准确性判定 (计算总质量是否超过称量质量)
+            const calcTotalMassSum = calcTotalMassBi + calcTotalMassPb;
+            const isAbnormal = calcTotalMassSum > mSample;
+
+            // 渲染
+            const stats = { 
+                avgConcBi, rsdBi, finalPercentBi, 
+                avgConcPb, rsdPb, finalPercentPb,
+                isAbnormal
+            };
+            
+            renderTable(results, cEDTA, mSample, stats);
+            updateStatsView(stats);
+            
+            // 处理异常警告
+            const alertBox = document.getElementById('accuracy-alert');
+            const resultCards = [document.getElementById('card-bi'), document.getElementById('card-pb')];
+            
+            if (isAbnormal) {
+                alertBox.classList.remove('hidden');
+                document.getElementById('final-percent-bi').classList.add('data-warning');
+                document.getElementById('final-percent-pb').classList.add('data-warning');
+                showToast("警告：计算质量超出试样总重！", true);
+            } else {
+                alertBox.classList.add('hidden');
+                document.getElementById('final-percent-bi').classList.remove('data-warning');
+                document.getElementById('final-percent-pb').classList.remove('data-warning');
+            }
+
+            document.getElementById('result-section').classList.remove('hidden');
+
+            // 历史记录
+            const currentHash = JSON.stringify(rawInputs);
+            if (currentHash === lastSubmissionHash) {
+                showToast("计算结果已刷新 (数据未变)");
+            } else {
+                const record = {
+                    date: new Date().toISOString(),
+                    cEDTA, mSample, vTotal, vPipette, results, stats
+                };
+                historyData.unshift(record);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+                renderHistory();
+                
+                lastSubmissionHash = currentHash;
+                showToast("计算完成！");
+            }
+        }
+        
+        function updateStatsView(stats) {
+            document.getElementById('avg-conc-bi').textContent = roundToSigFigs(stats.avgConcBi, 4) + " mol/L";
+            document.getElementById('rsd-bi').textContent = stats.rsdBi.toFixed(2) + " %";
+            document.getElementById('final-percent-bi').textContent = roundToSigFigs(stats.finalPercentBi, 4) + " %";
+            
+            document.getElementById('avg-conc-pb').textContent = roundToSigFigs(stats.avgConcPb, 4) + " mol/L";
+            document.getElementById('rsd-pb').textContent = stats.rsdPb.toFixed(2) + " %";
+            document.getElementById('final-percent-pb').textContent = roundToSigFigs(stats.finalPercentPb, 4) + " %";
+        }
+
+        function generateTableHtml(results, cEDTA, mSample, stats) {
+            const getVal = (idx, key, fixed) => {
+                if (!results[idx]) return '';
+                return results[idx][key].toFixed(fixed);
+            };
+
+            const getSigVal = (idx, key, sigFigs) => {
+                 if (!results[idx]) return '';
+                 return roundToSigFigs(results[idx][key], sigFigs);
+            }
+
+            const rows = [
+                { label: `试样总质量 m (g)`, val: () => parseFloat(mSample).toFixed(4) },
+                { label: `初读数 V<sub>初</sub> (mL)`, key: 'vStart', fix: 2 },
+                { label: `第一终点 V<sub>1</sub> (mL)`, key: 'vEnd1', fix: 2 },
+                { label: `第二终点 V<sub>2</sub> (mL)`, key: 'vEnd2', fix: 2 },
+                { label: `V<sub>Bi</sub> (mL)`, key: 'V_Bi', fix: 2 },
+                { label: `V<sub>Pb</sub> (mL)`, key: 'V_Pb', fix: 2 },
+                { label: `EDTA 浓度 (mol/L)`, val: () => roundToSigFigs(parseFloat(cEDTA), 4) },
+                { label: `C (Bi³⁺) (mol/L)`, key: 'concBi', sig: 4, color: true },
+                { label: `C (Pb²⁺) (mol/L)`, key: 'concPb', sig: 4, color: true },
+            ];
+
+            let html = `<table class="result-table bg-surface w-full"><thead><tr><th style="width: 30%">测定次数</th><th style="width: 23%">1</th><th style="width: 23%">2</th><th style="width: 23%">3</th></tr></thead><tbody>`;
+            
+            // 常规行
+            rows.forEach(row => {
+                html += `<tr><td class="text-left font-medium">${row.label}</td>`;
+                for(let i=0; i<3; i++) {
+                    let text = '';
+                    if (row.val) {
+                        text = row.val();
+                    } else if (row.sig) {
+                        text = getSigVal(i, row.key, row.sig);
+                    } else {
+                        text = getVal(i, row.key, row.fix);
+                    }
+                    
+                    let style = 'tabular-nums';
+                    if (row.bold) style += ' font-bold text-[var(--accent-color)]';
+                    else if (row.color) style += ' text-[var(--accent-color)] font-medium';
+                    
+                    html += `<td class="${style}">${text}</td>`;
+                }
+                html += `</tr>`;
+            });
+
+            // 如果包含 stats 对象，追加合并单元格的统计行
+            if (stats) {
+                // Bi 统计
+                html += `<tr class="bg-[var(--accent-bg)]/20"><td class="text-left font-bold text-primary">Bi 平均浓度</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)]">${roundToSigFigs(stats.avgConcBi, 4)} mol/L</td></tr>`;
+                html += `<tr><td class="text-left font-bold text-primary">Bi RSD</td><td colspan="3" class="tabular-nums">${stats.rsdBi.toFixed(2)} %</td></tr>`;
+                html += `<tr class="border-b-2 border-[var(--border-light)]"><td class="text-left font-bold text-primary">Bi 质量分数</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)] text-lg">${roundToSigFigs(stats.finalPercentBi, 4)} %</td></tr>`;
+                
+                // Pb 统计
+                html += `<tr class="bg-[var(--accent-bg)]/20"><td class="text-left font-bold text-primary">Pb 平均浓度</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)]">${roundToSigFigs(stats.avgConcPb, 4)} mol/L</td></tr>`;
+                html += `<tr><td class="text-left font-bold text-primary">Pb RSD</td><td colspan="3" class="tabular-nums">${stats.rsdPb.toFixed(2)} %</td></tr>`;
+                html += `<tr><td class="text-left font-bold text-primary">Pb 质量分数</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)] text-lg">${roundToSigFigs(stats.finalPercentPb, 4)} %</td></tr>`;
+            }
+
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function renderTable(results, cEDTA, mSample, stats) {
+            const tableHtml = generateTableHtml(results, cEDTA, mSample, stats);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = tableHtml;
+            document.getElementById('result-table-body').innerHTML = tempDiv.querySelector('tbody').innerHTML;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                container.innerHTML = '<p class="text-center text-sm text-secondary">暂无历史记录</p>';
+                return;
+            }
+
+            historyData.forEach((rec, idx) => {
+                const date = new Date(rec.date).toLocaleString('zh-CN');
+                // 历史记录也需要显示完整的合并统计行，传入 rec.stats
+                const tableHtml = generateTableHtml(rec.results, rec.cEDTA, rec.mSample, rec.stats);
+                const warnClass = rec.stats.isAbnormal ? 'border-red-400 border-l-4' : '';
+                
+                const html = `
+                <div class="bg-surface border border-[var(--border-light)] rounded-lg shadow-sm text-sm overflow-hidden transition-all duration-300 ${warnClass}">
+                    <div class="history-summary-row p-4 flex justify-between items-center" onclick="toggleHistory(${idx})">
+                        <div class="flex-1">
+                            <div class="font-bold text-[var(--accent-color)] mb-1">${date} ${rec.stats.isAbnormal ? '<span class="text-red-500 text-xs ml-2">(数据异常)</span>' : ''}</div>
+                            <div class="text-xs text-secondary flex gap-4">
+                                <span>Bi: <b class="tabular-nums">${roundToSigFigs(rec.stats.finalPercentBi, 4)}%</b></span>
+                                <span>Pb: <b class="tabular-nums">${roundToSigFigs(rec.stats.finalPercentPb, 4)}%</b></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="event.stopPropagation(); deleteHistory(${idx})" class="text-[var(--color-error)] text-xs hover:underline">删除</button>
+                            <svg id="arrow-${idx}" class="w-5 h-5 text-secondary expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    
+                    <div id="detail-${idx}" class="history-details bg-[var(--bg-canvas)] px-2 sm:px-4">
+                        <div class="py-4 overflow-x-auto">
+                           ${tableHtml}
+                        </div>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        
+        function toggleHistory(idx) {
+            const detail = document.getElementById(`detail-${idx}`);
+            const arrow = document.getElementById(`arrow-${idx}`);
+            if (detail.classList.contains('open')) {
+                detail.classList.remove('open');
+                arrow.classList.remove('open');
+            } else {
+                detail.classList.add('open');
+                arrow.classList.add('open');
+            }
+        }
+        
+        function deleteHistory(index) {
+            historyData.splice(index, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if(confirm('确定清空所有记录吗？')) {
+                historyData = [];
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        }
+        
+        function exportCSV() {
+            if (historyData.length === 0) return showToast("无数据可导出", true);
+            
+            let csv = "时间,测定次数,V_初(mL),V_1(mL),V_2(mL),V_Bi(mL),V_Pb(mL),C_Bi(mol/L),C_Pb(mol/L),Bi含量(%),Pb含量(%),数据异常\n";
+            
+            historyData.forEach(rec => {
+                const time = new Date(rec.date).toLocaleString().replace(',', ' ');
+                const isAbnormal = rec.stats.isAbnormal ? "是" : "否";
+                const biPct = roundToSigFigs(rec.stats.finalPercentBi, 4);
+                const pbPct = roundToSigFigs(rec.stats.finalPercentPb, 4);
+
+                rec.results.forEach((r, i) => {
+                    if(!r) return;
+                    const cBi = roundToSigFigs(r.concBi, 4);
+                    const cPb = roundToSigFigs(r.concPb, 4);
+                    csv += `${time},${i+1},${r.vStart},${r.vEnd1},${r.vEnd2},${r.V_Bi.toFixed(2)},${r.V_Pb.toFixed(2)},${cBi},${cPb},${biPct},${pbPct},${isAbnormal}\n`;
+                });
+            });
+            
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `铅铋合金含量分析_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- UI & 动效逻辑 ---
+        
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            toast.querySelector('span').innerText = msg;
+            const icon = toast.querySelector('svg');
+            
+            if (isError) {
+                icon.classList.remove('text-green-400');
+                icon.classList.add('text-red-400');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+            } else {
+                icon.classList.remove('text-red-400');
+                icon.classList.add('text-green-400'); 
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function copyText(el) {
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => showToast("已复制到剪贴板"));
+        }
+
+        // 主题切换 - 增加了 Amber (亮黄色/橙色)
+        const colorPalettes = {
+            'purple': { 
+                light: { '--accent-color': '#7c3aed', '--accent-color-dark': '#6d28d9', '--accent-bg': '#f5f3ff' }, 
+                dark: { '--accent-color': '#a78bfa', '--accent-color-dark': '#8b5cf6', '--accent-bg': '#2e1065' } 
+            },
+            'emerald': { 
+                light: { '--accent-color': '#059669', '--accent-color-dark': '#047857', '--accent-bg': '#ecfdf5' }, 
+                dark: { '--accent-color': '#34d399', '--accent-color-dark': '#10b981', '--accent-bg': '#102d24' } 
+            },
+            'blue': { 
+                light: { '--accent-color': '#2563eb', '--accent-color-dark': '#1d4ed8', '--accent-bg': '#eff6ff' }, 
+                dark: { '--accent-color': '#60a5fa', '--accent-color-dark': '#3b82f6', '--accent-bg': '#172554' } 
+            },
+            'amber': { 
+                light: { '--accent-color': '#f59e0b', '--accent-color-dark': '#d97706', '--accent-bg': '#fffbeb' }, 
+                // 修改：深色模式下使用深棕色背景(#2d2110)而非深红色(#451a03)；按钮使用更深的橙色(#f59e0b)而非亮黄(#fbbf24)
+                dark: { '--accent-color': '#f59e0b', '--accent-color-dark': '#b45309', '--accent-bg': '#2d2110' } 
+            }
+        };
+        let currentAccent = 'purple';
+        let currentMode = 'light';
+        let isAnim = true;
+
+        function setAccent(name) {
+            currentAccent = name;
+            applyTheme();
+            document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`button[onclick="setAccent('${name}')"]`).classList.add('active');
+        }
+        
+        function toggleMode() {
+            currentMode = currentMode === 'light' ? 'dark' : 'light';
+            document.getElementById('mode-text').innerText = currentMode === 'light' ? '浅色' : '深色';
+            document.body.setAttribute('data-mode', currentMode);
+            applyTheme();
+        }
+        
+        function applyTheme() {
+            const p = colorPalettes[currentAccent][currentMode];
+            const root = document.documentElement;
+            root.style.setProperty('--accent-color', p['--accent-color']);
+            root.style.setProperty('--accent-color-dark', p['--accent-color-dark']);
+            root.style.setProperty('--accent-bg', p['--accent-bg']);
+            const hex = p['--accent-color'].replace('#', '');
+            const r = parseInt(hex.substring(0,2), 16);
+            const g = parseInt(hex.substring(2,4), 16);
+            const b = parseInt(hex.substring(4,6), 16);
+            root.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
+        }
+
+        // 动效
+        function toggleAnimation() {
+            isAnim = !isAnim;
+            document.getElementById('animation-text').innerText = isAnim ? '动效开' : '动效关';
+            document.documentElement.style.setProperty('--animation-state', isAnim ? 'running' : 'paused');
+            document.getElementById('floating-container').style.opacity = isAnim ? '1' : '0';
+        }
+
+        function createFloatingElements() { 
+            const container = document.getElementById('floating-container');
+            container.innerHTML = ''; 
+            const symbols = ['Pb²⁺', 'Bi³⁺', 'Y⁴⁻', 'EDTA', 'pH≈1', 'pH≈5', 'HNO₃', 'BiY⁻', 'PbY²⁻']; 
+            for (let i = 0; i < 40; i++) {
+                const el = document.createElement('div');
+                el.classList.add('floating-element');
+                el.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                el.style.setProperty('--random-x', Math.random() * 100 + 'vw');
+                el.style.fontSize = (Math.random() * 1.5 + 1) + 'rem';
+                el.style.animationDuration = (Math.random() * 15 + 15) + 's';
+                el.style.animationDelay = (Math.random() * -20) + 's';
+                container.appendChild(el);
+            }
+        }
+
+        window.onload = function() {
+            initTrials();
+            renderHistory();
+            createFloatingElements();
+            applyTheme(); 
+        }
+
+    </script>
+</body>
+</html>
