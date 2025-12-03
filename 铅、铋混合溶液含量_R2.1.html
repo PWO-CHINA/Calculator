@@ -416,8 +416,8 @@
                         <span class="font-bold text-primary tabular-nums" id="avg-conc-bi">-</span>
                     </div>
                     <div class="flex justify-between mb-1">
-                        <span class="text-sm text-secondary">相对标准偏差 (RSD):</span>
-                        <span class="font-bold text-primary tabular-nums" id="rsd-bi">-</span>
+                        <span class="text-sm text-secondary">相对平均偏差 (RAD):</span>
+                        <span class="font-bold text-primary tabular-nums" id="rad-bi">-</span>
                     </div>
                     <div class="flex justify-between mt-2 pt-2 border-t border-dashed border-[var(--border-light)]">
                         <span class="text-sm font-bold text-primary">质量分数 (%):</span>
@@ -432,8 +432,8 @@
                         <span class="font-bold text-primary tabular-nums" id="avg-conc-pb">-</span>
                     </div>
                     <div class="flex justify-between mb-1">
-                        <span class="text-sm text-secondary">相对标准偏差 (RSD):</span>
-                        <span class="font-bold text-primary tabular-nums" id="rsd-pb">-</span>
+                        <span class="text-sm text-secondary">相对平均偏差 (RAD):</span>
+                        <span class="font-bold text-primary tabular-nums" id="rad-pb">-</span>
                     </div>
                     <div class="flex justify-between mt-2 pt-2 border-t border-dashed border-[var(--border-light)]">
                         <span class="text-sm font-bold text-primary">质量分数 (%):</span>
@@ -623,13 +623,14 @@
             }
         }
 
-        // RSD 计算辅助函数
-        function calcRSD(arr) {
-            if (arr.length < 2) return 0;
+        // RAD (相对平均偏差) 计算辅助函数
+        function calcRAD(arr) {
+            if (arr.length < 1) return 0;
             const mean = arr.reduce((a, b) => a + b) / arr.length;
-            const sumSqDiff = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
-            const stdDev = Math.sqrt(sumSqDiff / (arr.length - 1));
-            return (stdDev / mean) * 100;
+            if (mean === 0) return 0;
+            const sumAbsDiff = arr.reduce((sum, val) => sum + Math.abs(val - mean), 0);
+            const meanDev = sumAbsDiff / arr.length;
+            return (meanDev / mean) * 100;
         }
         
         function calcMean(arr) {
@@ -689,10 +690,10 @@
             
             // 2. 统计计算
             const avgConcBi = calcMean(concBiArr);
-            const rsdBi = calcRSD(concBiArr);
+            const radBi = calcRAD(concBiArr);
             
             const avgConcPb = calcMean(concPbArr);
-            const rsdPb = calcRSD(concPbArr);
+            const radPb = calcRAD(concPbArr);
             
             // 3. 使用平均浓度计算最终质量分数
             // m_total = C_avg * V_total * M_atomic
@@ -711,8 +712,8 @@
 
             // 渲染
             const stats = { 
-                avgConcBi, rsdBi, finalPercentBi, 
-                avgConcPb, rsdPb, finalPercentPb,
+                avgConcBi, radBi, finalPercentBi, 
+                avgConcPb, radPb, finalPercentPb,
                 isAbnormal
             };
             
@@ -756,11 +757,11 @@
         
         function updateStatsView(stats) {
             document.getElementById('avg-conc-bi').textContent = roundToSigFigs(stats.avgConcBi, 4) + " mol/L";
-            document.getElementById('rsd-bi').textContent = stats.rsdBi.toFixed(2) + " %";
+            document.getElementById('rad-bi').textContent = stats.radBi.toFixed(2) + " %";
             document.getElementById('final-percent-bi').textContent = roundToSigFigs(stats.finalPercentBi, 4) + " %";
             
             document.getElementById('avg-conc-pb').textContent = roundToSigFigs(stats.avgConcPb, 4) + " mol/L";
-            document.getElementById('rsd-pb').textContent = stats.rsdPb.toFixed(2) + " %";
+            document.getElementById('rad-pb').textContent = stats.radPb.toFixed(2) + " %";
             document.getElementById('final-percent-pb').textContent = roundToSigFigs(stats.finalPercentPb, 4) + " %";
         }
 
@@ -815,12 +816,12 @@
             if (stats) {
                 // Bi 统计
                 html += `<tr class="bg-[var(--accent-bg)]/20"><td class="text-left font-bold text-primary">Bi 平均浓度</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)]">${roundToSigFigs(stats.avgConcBi, 4)} mol/L</td></tr>`;
-                html += `<tr><td class="text-left font-bold text-primary">Bi RSD</td><td colspan="3" class="tabular-nums">${stats.rsdBi.toFixed(2)} %</td></tr>`;
+                html += `<tr><td class="text-left font-bold text-primary">Bi RAD</td><td colspan="3" class="tabular-nums">${stats.radBi.toFixed(2)} %</td></tr>`;
                 html += `<tr class="border-b-2 border-[var(--border-light)]"><td class="text-left font-bold text-primary">Bi 质量分数</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)] text-lg">${roundToSigFigs(stats.finalPercentBi, 4)} %</td></tr>`;
                 
                 // Pb 统计
                 html += `<tr class="bg-[var(--accent-bg)]/20"><td class="text-left font-bold text-primary">Pb 平均浓度</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)]">${roundToSigFigs(stats.avgConcPb, 4)} mol/L</td></tr>`;
-                html += `<tr><td class="text-left font-bold text-primary">Pb RSD</td><td colspan="3" class="tabular-nums">${stats.rsdPb.toFixed(2)} %</td></tr>`;
+                html += `<tr><td class="text-left font-bold text-primary">Pb RAD</td><td colspan="3" class="tabular-nums">${stats.radPb.toFixed(2)} %</td></tr>`;
                 html += `<tr><td class="text-left font-bold text-primary">Pb 质量分数</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)] text-lg">${roundToSigFigs(stats.finalPercentPb, 4)} %</td></tr>`;
             }
 
