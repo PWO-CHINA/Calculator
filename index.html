@@ -1,248 +1,258 @@
 <!DOCTYPE html>
 <html lang="zh-CN" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ChemLab Pro - 化学计算工具集</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['SF Pro Display', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                    },
-                    colors: {
-                        ios: {
-                            bg: '#F2F2F7',
-                            card: '#FFFFFF',
-                            text: '#1D1D1F',
-                            subtext: '#86868B',
-                            blue: '#007AFF',
-                            dark: {
-                                bg: '#000000',
-                                card: '#1C1C1E',
-                                text: '#F5F5F7',
-                                subtext: '#86868B',
-                            }
-                        }
-                    },
-                    boxShadow: {
-                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
-                        'floating': '0 20px 40px -10px rgba(0,0,0,0.1)',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* 自定义高斯模糊与过渡 */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        .dark .glass-panel {
-            background: rgba(28, 28, 30, 0.85);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* 隐藏滚动条但保留功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* 触摸反馈动画 */
-        .tap-active:active {
-            transform: scale(0.96);
-            transition: transform 0.1s ease;
-        }
-        
-        /* 渐变文字 */
-        .gradient-text {
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChemLab Pro - 现代化实验室计算平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <script type="module" src="/src/main.js"></script>
 </head>
-<body class="bg-ios-bg text-ios-text antialiased min-h-screen transition-colors duration-300 dark:bg-ios-dark-bg dark:text-ios-dark-text selection:bg-ios-blue selection:text-white pb-20">
 
-    <!-- 顶部导航栏 (Glassmorphism) -->
-    <nav class="fixed top-0 w-full z-50 glass-panel transition-colors duration-300">
-        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
+<body class="overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+    <!-- Background Decoration -->
+    <div class="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
+        <div
+            class="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl animate-blob">
+        </div>
+        <div
+            class="absolute top-[20%] -right-[10%] w-[60%] h-[60%] bg-blue-200/30 dark:bg-blue-900/20 rounded-full blur-3xl animate-blob animation-delay-2000">
+        </div>
+        <div
+            class="absolute -bottom-[20%] left-[20%] w-[50%] h-[50%] bg-indigo-200/30 dark:bg-indigo-900/20 rounded-full blur-3xl animate-blob animation-delay-4000">
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 transition-all duration-300 border-b border-transparent" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 sm:h-20">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        </svg>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">ChemLab <span
+                            class="text-brand-500">Pro</span></span>
                 </div>
-                <span class="font-bold text-lg tracking-tight">ChemLab <span class="text-ios-blue">Pro</span></span>
+
+                <div class="flex items-center gap-4">
+                    <button id="theme-toggle"
+                        class="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400">
+                        <svg id="sun-icon" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <svg id="moon-icon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                    <a href="https://github.com/PWO-CHINA/Hydrochloric-acid-standard-solution-preparation-calculator"
+                        target="_blank"
+                        class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:opacity-90 transition-opacity">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                        </svg>
+                        <span>GitHub</span>
+                    </a>
+                </div>
             </div>
-            
-            <!-- 主题切换按钮 -->
-            <button id="theme-toggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-800 tap-active transition-colors">
-                <svg id="sun-icon" class="w-5 h-5 hidden dark:block text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <svg id="moon-icon" class="w-5 h-5 block dark:hidden text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-            </button>
         </div>
     </nav>
 
-    <!-- 主内容区 -->
-    <main class="max-w-5xl mx-auto px-4 pt-24">
-        
-        <!-- Hero Header -->
-        <header class="mb-10 px-2">
-            <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3">
-                实验室计算，<br>
-                <span class="gradient-text">精准且优雅。</span>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
+
+        <!-- Hero Section -->
+        <div class="text-center mb-20 animate-slide-up">
+            <div
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 text-sm font-medium mb-6 border border-brand-100 dark:border-brand-500/20">
+                <span class="relative flex h-2 w-2">
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                </span>
+                全新 Version 2.0 已发布
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-gray-900 dark:text-white">
+                实验室计算，<br class="hidden md:block" />
+                <span class="hero-gradient">精准且优雅。</span>
             </h1>
-            <p class="text-ios-subtext text-lg max-w-xl">
-                专为实验人员打造的现代化计算工具集。无论是溶液配制还是滴定分析，都能在指尖快速完成。
+            <p class="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                专为科研与检测人员打造的下一代计算工具集。集成溶液配制、滴定分析与数据管理，让每一次实验都精准无误。
             </p>
-        </header>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#calculators" class="btn-primary flex items-center justify-center gap-2">
+                    开始计算
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </a>
+            </div>
+        </div>
 
-        <!-- Bento Grid 布局 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <!-- Bento Grid Section -->
+        <div id="calculators"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(180px,auto)]">
 
-            <!-- 1. 盐酸标准溶液 (大卡片) -->
-            <a href="hydrochloric-acid-calculator.html" class="group relative col-span-1 md:col-span-2 bg-white dark:bg-ios-dark-card rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-floating transition-all duration-300 tap-active overflow-hidden">
-                <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3v1H4v2h5v2H4v2h5v2H4v2h5v3h2v-3h5v-2h-5v-2h5v-2h-5V8h5V6h-5V3H9z"/></svg>
+            <!-- 盐酸计算器 (Featured) -->
+            <a href="hydrochloric-acid-calculator.html"
+                class="glass-card group p-8 rounded-[2rem] md:col-span-2 lg:col-span-2 relative overflow-hidden">
+                <div
+                    class="absolute top-0 right-0 p-10 opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 dark:group-hover:opacity-[0.08] transition-opacity duration-500">
+                    <svg class="w-64 h-64" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 3v1H4v2h5v2H4v2h5v2H4v2h5v3h2v-3h5v-2h-5v-2h5v-2h-5V8h5V6h-5V3H9z" />
+                    </svg>
                 </div>
-                <div class="relative z-10 flex flex-col h-full justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4 text-blue-500">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                <div class="relative z-10 h-full flex flex-col justify-between">
+                    <div class="flex items-start justify-between mb-8">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
                         </div>
-                        <h2 class="text-2xl font-bold mb-2 group-hover:text-blue-500 transition-colors">盐酸标准溶液配制</h2>
-                        <p class="text-ios-subtext">自动计算稀释比例，支持浓度标定与历史记录。实验室最常用的酸碱配制助手。</p>
+                        <span
+                            class="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-semibold">Most
+                            Used</span>
                     </div>
-                    <div class="mt-6 flex items-center text-sm font-semibold text-blue-500">
-                        立即使用
-                        <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <div>
+                        <h3
+                            class="text-2xl font-bold mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            盐酸标准溶液配制</h3>
+                        <p class="text-gray-500 dark:text-gray-400 leading-relaxed max-w-md">
+                            无论您是需要配制新溶液还是标定现有浓度，智能算法都能帮您精确计算稀释比例，自动记录标定历史。</p>
                     </div>
                 </div>
             </a>
 
-            <!-- 2. 混合碱滴定 (高卡片) -->
-            <a href="mixed-alkali-calculator.html" class="group relative bg-white dark:bg-ios-dark-card rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-floating transition-all duration-300 tap-active md:row-span-2 overflow-hidden">
-                <div class="absolute -bottom-8 -right-8 opacity-5 group-hover:opacity-15 transition-opacity">
-                    <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+            <!-- 混合碱 -->
+            <a href="mixed-alkali-calculator.html"
+                class="glass-card group p-8 rounded-[2rem] md:row-span-2 relative overflow-hidden">
+                <div
+                    class="absolute -bottom-10 -right-10 opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 dark:group-hover:opacity-[0.08] transition-opacity duration-500">
+                    <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                    </svg>
                 </div>
                 <div class="relative z-10 h-full flex flex-col">
-                    <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mb-4 text-purple-500">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
                     </div>
-                    <h2 class="text-xl font-bold mb-2 group-hover:text-purple-500 transition-colors">混合碱滴定分析</h2>
-                    <p class="text-ios-subtext text-sm mb-4">通过双指示剂法滴定数据，智能判定碱样品组成（NaOH/Na₂CO₃）。</p>
-                    
-                    <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                            <li class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 mr-2"></span>双指示剂法</li>
-                            <li class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 mr-2"></span>自动组分识别</li>
-                        </ul>
-                    </div>
+                    <h3
+                        class="text-xl font-bold mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                        混合碱滴定分析</h3>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-grow">双指示剂法滴定数据录入，即刻生成组分分析报告。</p>
+                    <ul
+                        class="space-y-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/50 pt-6">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            智能组分识别
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            自动误差修正
+                        </li>
+                    </ul>
                 </div>
             </a>
 
-            <!-- 3. EDTA 标定 -->
-            <a href="EDTA标准溶液配制_R2.html" class="group relative bg-white dark:bg-ios-dark-card rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-floating transition-all duration-300 tap-active">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center mb-4 text-green-500">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
-                        </div>
-                        <h2 class="text-lg font-bold group-hover:text-green-500 transition-colors">EDTA 浓度标定</h2>
+            <!-- EDTA -->
+            <a href="EDTA标准溶液配制_R2.html"
+                class="glass-card group p-8 rounded-[2rem] relative overflow-hidden hover:bg-green-50/50 dark:hover:bg-green-900/10 active:scale-[0.98]">
+                <div class="flex items-center justify-between mb-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        </svg>
                     </div>
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </div>
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-green-500 transition-colors" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
                 </div>
-                <p class="text-ios-subtext text-sm mt-2">双模式设计：锌液配制 (ZnO法) 与 EDTA 标定。实时数据同步，支持 RAD 评估。</p>
+                <h3
+                    class="text-lg font-bold mb-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                    EDTA 浓度标定</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">ZnO基准法与配位滴定双模式，支持RAD数据评估。</p>
             </a>
 
-            <!-- 4. 铅铋测定 -->
-            <a href="铅、铋混合溶液含量_R2.1.html" class="group relative bg-white dark:bg-ios-dark-card rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-floating transition-all duration-300 tap-active">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center mb-4 text-orange-500">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
-                        </div>
-                        <h2 class="text-lg font-bold group-hover:text-orange-500 transition-colors">铅/铋混合含量测定</h2>
+            <!-- 铅铋 -->
+            <a href="铅、铋混合溶液含量_R2.1.html"
+                class="glass-card group p-8 rounded-[2rem] relative overflow-hidden hover:bg-orange-50/50 dark:hover:bg-orange-900/10 active:scale-[0.98]">
+                <div class="flex items-center justify-between mb-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        </svg>
                     </div>
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </div>
+                    <svg class="w-5 h-5 text-gray-300 group-hover:text-orange-500 transition-colors" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
                 </div>
-                <p class="text-ios-subtext text-sm mt-2">EDTA 连续滴定法，pH 控制分步分析 (Bi³⁺/Pb²⁺)。异常数据实时警告。</p>
+                <h3
+                    class="text-lg font-bold mb-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                    Pb/Bi 混合分析</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">分步pH控制连续滴定，精准测定混合液中金属离子含量。</p>
             </a>
 
         </div>
 
-        <!-- 底部信息 -->
-        <footer class="mt-12 md:mt-16 text-center border-t border-gray-200 dark:border-gray-800 pt-8 pb-8">
-            <p class="text-sm text-ios-subtext mb-2">
-                Designed for Accuracy & Efficiency
-            </p>
-            <div class="flex justify-center items-center gap-4 text-xs font-medium text-gray-400">
-                <a href="https://github.com/PWO-CHINA/Hydrochloric-acid-standard-solution-preparation-calculator" class="hover:text-ios-blue transition-colors flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    GitHub 项目主页
-                </a>
-                <span>•</span>
-                <span>Version 2.0</span>
-            </div>
-        </footer>
-
     </main>
 
-    <script>
-        // 暗黑模式切换逻辑
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        
-        // 检查本地存储或系统偏好
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-dark-card mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex justify-center md:justify-start gap-6">
+                    <p class="text-center text-sm text-gray-500">
+                        &copy; 2024 PWO-CHINA. All rights reserved.
+                    </p>
+                </div>
+                <div class="mt-8 md:mt-0 flex justify-center md:justify-end gap-6">
+                    <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">GitHub</span>
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd"
+                                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
 
-        themeToggleBtn.addEventListener('click', () => {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.theme = 'light';
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.theme = 'dark';
-            }
-        });
-
-        // 简单的进入动画
-        document.addEventListener('DOMContentLoaded', () => {
-            const cards = document.querySelectorAll('a[href]');
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                setTimeout(() => {
-                    card.style.transition = 'opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100 + index * 100);
-            });
-        });
-    </script>
 </body>
+
 </html>
