@@ -1,4 +1,4 @@
-import './src/style.css'
+import './style.css'
 
 // Theme Toggle Logic
 const themeToggleBtn = document.getElementById('theme-toggle');
