@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EDTA 标定计算器 - ZnO基准法</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            --bg-canvas: #f5f3ff; /* 浅紫背景，呼应EDTA/指示剂颜色 */
+            --bg-surface: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6b7280;
+            --accent-color: #7c3aed; /* 紫色系 */
+            --accent-bg: #ede9fe;
+            --accent-hover: #6d28d9;
+            --color-error: #ef4444;
+            --border-light: #e5e7eb;
+            --button-text: #ffffff;
+            --accent-color-rgb: 124, 58, 237;
+            --animation-state: running;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            background-image: radial-gradient(circle at 50% 10%, rgba(var(--accent-color-rgb), 0.1) 0%, var(--bg-canvas) 50%);
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 1.5rem 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+        
+        .main-calculator-card {
+            position: relative;
+            z-index: 10; 
+            width: 90%;
+            max-width: 700px;
+            margin: 0;
+            margin-bottom: 4rem; 
+            overflow: hidden;
+            padding: 0; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- 核心滑动容器 --- */
+        .views-viewport {
+            width: 100%;
+            overflow: hidden;
+            transition: height 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+        }
+
+        .views-track {
+            display: flex;
+            width: 200%; 
+            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            align-items: flex-start; 
+        }
+
+        .single-view {
+            width: 50%;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            padding: 2rem; 
+        }
+        
+        @media (max-width: 640px) {
+            .single-view { padding: 1.25rem; }
+        }
+
+        /* --- 动画 --- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-stagger-enter {
+            animation: fadeInUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+        }
+        .delay-100 { animation-delay: 0.05s; }
+        .delay-200 { animation-delay: 0.1s; }
+        .delay-300 { animation-delay: 0.15s; }
+        .delay-400 { animation-delay: 0.2s; }
+
+        /* --- 背景粒子 --- */
+        #floating-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; pointer-events: none; z-index: 0;
+        }
+        .floating-element {
+            position: absolute; top: 0; left: var(--initial-x-offset);
+            color: var(--accent-color); opacity: 0.1; font-weight: 700;
+            white-space: nowrap; animation: waterfall linear infinite;
+            animation-play-state: var(--animation-state); -webkit-user-select: none; -moz-user-select: none; user-select: none;
+            font-family: 'Times New Roman', serif; 
+        }
+        @keyframes waterfall { 0% { transform: translateY(-100vh) rotate(0deg); } 100% { transform: translateY(200vh) rotate(360deg); } }
+        
+        /* --- 深色模式 --- */
+        body[data-mode="dark"] {
+            --bg-canvas: #0f0a1a; --bg-surface: #1e1b2e; --text-primary: #ffffff;
+            --text-secondary: #a8b9d9; --color-error: #ff7f7f; --border-light: #332e40;
+            --button-text: #0a0a0a;
+            --accent-hover: #d8b4fe;
+             background-image: radial-gradient(circle at 50% 10%, rgba(var(--accent-color-rgb), 0.2) 0%, var(--bg-canvas) 50%);
+        }
+        .bg-surface { background-color: var(--bg-surface); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-light { border-color: var(--border-light); }
+        .accent-bg { background-color: var(--accent-bg); }
+        
+        /* --- 组件样式 --- */
+        .input-field {
+            border-color: var(--border-light); color: var(--text-primary); background-color: var(--bg-surface);
+            transition: all 0.3s;
+        }
+        .input-field:focus {
+            border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.3); outline: none;
+        }
+        .input-field.error-border {
+            border-color: var(--color-error) !important;
+            background-color: rgba(240, 76, 76, 0.05);
+        }
+        .input-read-only {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            font-weight: bold;
+            cursor: not-allowed;
+        }
+        
+        .calculate-button {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+            color: var(--button-text);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 700;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+        .calculate-button::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.1); opacity: 0; transition: opacity 0.3s;
+        }
+        .calculate-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(var(--accent-color-rgb), 0.4); }
+        .calculate-button:hover::after { opacity: 1; }
+        .calculate-button:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(var(--accent-color-rgb), 0.3); }
+
+        .action-btn { transition: all 0.2s; opacity: 0.9; }
+        .action-btn:hover { opacity: 1; transform: scale(1.05); }
+        .action-btn:active { transform: scale(0.95); }
+
+        #mode-selector {
+            position: relative; z-index: 50; display: flex; flex-direction: row;
+            width: 90%; max-width: 500px; margin-bottom: 1.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); border-radius: 12px;
+            overflow: hidden; transition: all 0.5s ease-out;
+        }
+        .mode-tab {
+            width: 50%; padding: 12px 8px; cursor: pointer; text-align: center; font-weight: 600; font-size: 0.9rem;
+            color: var(--text-secondary); background-color: var(--bg-surface); transition: all 0.3s ease-in-out;
+            border-right: 1px solid var(--border-light); border-bottom: 4px solid transparent;
+        }
+        .mode-tab:last-child { border-right: none; }
+        #mode-selector .mode-tab.active-mode {
+            color: var(--accent-color); background-color: var(--accent-bg);
+            border-bottom-color: var(--accent-color) !important; box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.15) inset;
+        }
+        @media (min-width: 640px) {
+            #mode-selector {
+                position: fixed; top: 50%; left: 0; transform: translateY(-50%);
+                flex-direction: column; width: auto; max-width: none; margin-bottom: 0;
+                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1); border-radius: 0 12px 12px 0;
+            }
+            .mode-tab { width: 120px; border-left: 4px solid transparent; border-right: none; border-bottom: 1px solid var(--border-light); }
+            .mode-tab:last-child { border-bottom: none; }
+            #mode-selector .mode-tab.active-mode { border-left-color: var(--accent-color); border-bottom-color: var(--border-light) !important; }
+        }
+
+        .theme-button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .theme-button:hover { transform: scale(1.1); }
+        .theme-button.active { box-shadow: 0 0 0 2px var(--accent-color); transform: scale(1.1); }
+
+        #toast-notification {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.8); color: white; padding: 0.75rem 1.5rem; border-radius: 9999px;
+            font-size: 0.9rem; font-weight: 500; z-index: 100; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); display: flex; align-items: center; gap: 0.5rem;
+        }
+        #toast-notification.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        
+        .copyable-result { cursor: pointer; border-bottom: 2px dashed rgba(var(--accent-color-rgb), 0.3); }
+        .page-indicators { display: flex; justify-content: center; gap: 8px; margin-bottom: 1rem; }
+        .page-dot { width: 8px; height: 8px; background-color: var(--border-light); border-radius: 50%; transition: all 0.3s; }
+        .page-dot.active { width: 24px; background-color: var(--accent-color); border-radius: 4px; }
+
+        #swipe-hint {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7); padding: 20px; border-radius: 16px; color: white;
+            z-index: 200; pointer-events: none; animation: fadeOutHint 0.5s ease-in 2.5s forwards; display: none;
+        }
+        @keyframes fadeOutHint { to { opacity: 0; visibility: hidden; } }
+        @keyframes swipeHand { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-30px); } }
+        .hand-icon { font-size: 3rem; animation: swipeHand 1.5s infinite ease-in-out; }
+
+        /* 历史记录表格 */
+        .history-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 100%; font-size: 0.85rem; border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden; }
+        .history-table th { 
+            background-color: var(--accent-bg); 
+            color: var(--text-primary);
+            font-weight: 700;
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+            white-space: nowrap;
+        }
+        .history-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            text-align: center;
+            vertical-align: middle;
+        }
+        .history-table tr:last-child td { border-bottom: none; }
+        .history-table tr:hover { background-color: rgba(var(--accent-color-rgb), 0.03); cursor: pointer; }
+        
+        .clickable-row:active { background-color: rgba(var(--accent-color-rgb), 0.1); }
+
+        .input-group-label {
+            font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; display: block;
+        }
+        .input-compact { width: 100%; }
+        .input-compact input { text-align: center; padding: 8px 4px; font-size: 0.9rem; }
+
+        /* 自定义指示剂颜色条 */
+        .color-scale {
+            height: 6px; width: 100%; border-radius: 3px; margin-top: 5px;
+            background: linear-gradient(90deg, #9b2c2c 0%, #d6bcfa 40%, #f6e05e 100%);
+        }
+        .color-label { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-secondary); margin-top: 2px; }
+
+        /* Modal Styles */
+        #detail-modal { transition: opacity 0.3s ease; }
+        #detail-modal.hidden { opacity: 0; pointer-events: none; }
+        #detail-modal:not(.hidden) { opacity: 1; pointer-events: auto; }
+        
+        .mass-mode-toggle {
+            display: flex; gap: 10px; margin-bottom: 6px; font-size: 0.8rem; color: var(--text-secondary);
+        }
+        .mass-mode-label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .mass-mode-radio { accent-color: var(--accent-color); }
+    </style>
+</head>
+<body data-mode="light">
+    
+    <div id="floating-container"></div>
+    <div id="swipe-hint"><div class="hand-icon">👆</div><div class="mt-2 font-bold">左右滑动切换模式</div></div>
+    <div id="toast-notification">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+        <span>结果已复制</span>
+    </div>
+    
+    <!-- 模态框 (Modal) -->
+    <div id="detail-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <!-- 背景遮罩 -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <!-- 内容卡片 -->
+        <div class="relative bg-surface w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-100 border border-[var(--border-light)]">
+             <div class="bg-[var(--accent-bg)] px-6 py-4 flex justify-between items-center border-b border-[var(--border-light)]">
+                 <h3 class="font-bold text-[var(--accent-color)] text-lg">实验详情</h3>
+                 <button onclick="closeModal()" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                 </button>
+             </div>
+             <div class="p-6 overflow-y-auto max-h-[70vh]" id="modal-content">
+                 <!-- 动态注入内容 -->
+             </div>
+        </div>
+    </div>
+    
+    <div id="mode-selector">
+        <div id="tab-prep" class="mode-tab active-mode" onclick="setMode('prep')">
+            <div class="text-lg">⚖️</div> 锌液配制
+        </div>
+        <div id="tab-titration" class="mode-tab" onclick="setMode('titration')">
+            <div class="text-lg">🧪</div> EDTA标定
+        </div>
+    </div>
+    
+    <div class="page-indicators sm:hidden">
+        <div id="dot-prep" class="page-dot active"></div>
+        <div id="dot-titration" class="page-dot"></div>
+    </div>
+
+    <!-- 主卡片 -->
+    <div class="main-calculator-card bg-surface shadow-2xl rounded-2xl border-t-8 border-[var(--accent-color)] transition-colors duration-500">
+        
+        <!-- 顶部控制区 -->
+        <div class="px-6 py-4 border-b border-[var(--border-light)] transition-colors duration-500 bg-surface z-20 relative">
+            <div class="flex flex-col space-y-3">
+                <div class="flex flex-wrap items-center justify-between sm:justify-start sm:space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleMode()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] hover:bg-[var(--border-light)] text-xs font-bold transition-colors active:scale-95 border border-[var(--border-light)]">
+                            <span id="mode-text">浅色</span>
+                        </button>
+                        <button onclick="toggleAnimation()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] hover:bg-[var(--border-light)] text-xs font-bold transition-colors active:scale-95 border border-[var(--border-light)]">
+                            <span id="animation-text">动效: 开</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 sm:ml-auto">
+                        <button id="accent-violet" onclick="setAccent('violet')" class="theme-button active" style="background: #8b5cf6;" title="紫罗兰 (EDTA)"></button>
+                        <button id="accent-organic" onclick="setAccent('organic')" class="theme-button" style="background: #8c7851;" title="有机金"></button>
+                        <button id="accent-starry-night" onclick="setAccent('starry-night')" class="theme-button" style="background: #27497d;" title="星月夜"></button>
+                        <button id="accent-emerald" onclick="setAccent('emerald')" class="theme-button" style="background: #059669;" title="祖母绿"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图视口 Viewport -->
+        <div id="views-viewport" class="views-viewport">
+            <div id="views-track" class="views-track">
+                
+                <!-- 模式一：锌标准溶液配制 -->
+                <div id="view-prep" class="single-view">
+                    <div class="space-y-6">
+                        <div class="animate-target delay-100 text-center">
+                            <h1 class="text-2xl font-black text-primary mb-1">基准锌溶液配制</h1>
+                            <p class="text-[var(--text-secondary)] text-sm">ZnO + 2HCl → ZnCl₂ + H₂O</p>
+                        </div>
+
+                        <div class="bg-[var(--accent-bg)] p-4 rounded-xl border border-light transition-colors duration-500 animate-target delay-200 shadow-sm">
+                            <h2 class="text-sm font-bold text-primary mb-3 uppercase tracking-wide opacity-80 border-b border-[rgba(0,0,0,0.1)] pb-1">基准物质参数</h2>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-secondary mb-1">基准物质</label>
+                                    <input type="text" value="氧化锌 (ZnO)" disabled class="w-full rounded-lg p-2 border input-field text-sm bg-gray-50 text-gray-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-secondary mb-1">摩尔质量 (g/mol)</label>
+                                    <input type="number" id="molar-mass-zno" value="81.38" disabled
+                                           class="w-full rounded-lg p-2 border input-field text-sm bg-gray-50 text-gray-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 animate-target delay-300">
+                            <div>
+                                <label class="block text-sm font-bold text-primary mb-1">ZnO 称取质量 (g)</label>
+                                
+                                <!-- 质量输入模式切换 -->
+                                <div class="mass-mode-toggle">
+                                    <label class="mass-mode-label">
+                                        <input type="radio" name="massModePrep" value="direct" class="mass-mode-radio" checked onchange="togglePrepMassMode()"> 
+                                        直接输入
+                                    </label>
+                                    <label class="mass-mode-label">
+                                        <input type="radio" name="massModePrep" value="diff" class="mass-mode-radio" onchange="togglePrepMassMode()"> 
+                                        减量法 (m = |m₁ - m₂|)
+                                    </label>
+                                </div>
+
+                                <!-- 直接输入 -->
+                                <div id="prep-mass-direct">
+                                    <input type="number" id="mass-zno" placeholder="推荐 0.4000 - 0.5000" min="0" step="0.0001"
+                                        class="block w-full rounded-md p-3 border input-field font-medium" oninput="preventNegative(this); hideMessages()">
+                                </div>
+
+                                <!-- 减量法输入 -->
+                                <div id="prep-mass-diff" class="hidden grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[10px] text-secondary font-bold uppercase mb-1">总量 m₁ (g)</label>
+                                        <input type="number" id="mass-zno-m1" placeholder="总量" min="0" step="0.0001"
+                                            class="block w-full rounded-md p-3 border input-field font-medium" oninput="preventNegative(this); hideMessages()">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] text-secondary font-bold uppercase mb-1">余量 m₂ (g)</label>
+                                        <input type="number" id="mass-zno-m2" placeholder="余量" min="0" step="0.0001"
+                                            class="block w-full rounded-md p-3 border input-field font-medium" oninput="preventNegative(this); hideMessages()">
+                                    </div>
+                                </div>
+
+                                <p class="text-xs text-secondary mt-1 ml-1">精确至 0.0001 g</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-primary mb-1">定容体积 (mL)</label>
+                                <input type="number" id="volume-flask" value="250" min="0"
+                                       class="block w-full rounded-md p-3 border input-field font-medium" oninput="preventNegative(this); hideMessages()">
+                            </div>
+
+                            <button onclick="calculateZnConc()" class="w-full py-3 rounded-lg shadow-lg text-lg calculate-button mt-4">计算锌标准溶液浓度</button>
+                        </div>
+
+                        <div id="prep-result-box" class="mt-4 p-5 bg-surface rounded-xl border-2 border-[var(--accent-color)] hidden animate-target shadow-md">
+                            <h2 class="text-sm font-bold text-[var(--accent-color)] mb-1 uppercase tracking-wider">计算结果 (C<sub>Zn</sub>)</h2>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="zinc-concentration" class="text-4xl font-extrabold text-[var(--accent-color)] copyable-result" onclick="copyResult(this)">0.0000</span> 
+                                <span class="text-xl font-bold text-[var(--accent-color)]">mol/L</span>
+                            </div>
+                            <p class="text-xs text-green-600 mt-2 font-bold flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                                已自动应用到标定页面
+                            </p>
+                        </div>
+
+                        <div class="pt-6 border-t border-light animate-target delay-400">
+                             <div class="flex justify-between items-center mb-3">
+                                 <h2 class="text-sm font-bold text-secondary">配制记录 (点击使用)</h2>
+                                 <button onclick="clearPrepHistory()" class="action-btn px-3 py-1.5 bg-[var(--color-error)] text-white rounded-lg text-xs font-bold shadow-sm">清空</button>
+                             </div>
+                             <div id="prep-history-container" class="overflow-x-auto"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 模式二：EDTA 标定 -->
+                <div id="view-titration" class="single-view">
+                    <div class="space-y-6">
+                        <div class="animate-target delay-100 text-center">
+                             <h1 class="text-2xl font-black text-primary mb-1">EDTA 浓度标定</h1>
+                             <p class="text-[var(--text-secondary)] text-sm">指示剂：二甲酚橙 (紫红 → 亮黄)</p>
+                             <div class="w-32 mx-auto mt-2">
+                                 <div class="color-scale"></div>
+                                 <div class="color-label"><span>紫红</span><span>终点</span><span>亮黄</span></div>
+                             </div>
+                        </div>
+                         
+                        <div class="bg-[var(--accent-bg)] p-4 rounded-xl border border-light transition-colors duration-500 animate-target delay-200 shadow-sm">
+                            <h2 class="text-sm font-bold text-primary mb-3 uppercase tracking-wide opacity-80 border-b border-[rgba(0,0,0,0.1)] pb-1">滴定参数</h2>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="input-group-label">C<sub>Zn</sub> (mol/L) <span class="text-xs font-normal normal-case opacity-70">(可编辑)</span></label>
+                                    <input type="number" id="conc-zn-input" step="0.0001" min="0" class="w-full rounded-lg p-2 border input-field text-sm font-bold" oninput="preventNegative(this)">
+                                </div>
+                                <div>
+                                    <label class="input-group-label">移取体积 V<sub>Zn</sub> (mL)</label>
+                                    <input type="number" id="vol-pipette" value="25.00" step="0.01" min="0" class="w-full rounded-lg p-2 border input-field text-sm" oninput="preventNegative(this)">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="animate-target delay-300">
+                            <h2 class="text-sm font-bold text-primary mb-2 pl-1">滴定数据 (EDTA 消耗量)</h2>
+                            
+                            <!-- 表头 -->
+                            <div class="grid grid-cols-[20px_1fr_1fr_1fr] gap-2 mb-2 px-1">
+                                <div></div>
+                                <div class="text-xs font-bold text-secondary text-center">初读数 (mL)</div>
+                                <div class="text-xs font-bold text-secondary text-center">终读数 (mL)</div>
+                                <div class="text-xs font-bold text-secondary text-center">消耗 V (mL)</div>
+                            </div>
+
+                            <div id="trials-container" class="space-y-3">
+                                <!-- Trial 1 -->
+                                <div class="grid grid-cols-[20px_1fr_1fr_1fr] gap-2 items-center">
+                                    <span class="font-bold text-secondary text-sm text-center">1</span>
+                                    <div class="input-compact">
+                                        <input type="number" id="v-start-1" placeholder="0.00" step="0.01" min="0" class="w-full rounded-lg border input-field font-medium" oninput="preventNegative(this); calcDelta(1)" onchange="formatDecimal(this, 2)">
+                                    </div>
+                                    <div class="input-compact">
+                                        <input type="number" id="v-end-1" placeholder="0.00" step="0.01" min="0" class="w-full rounded-lg border input-field font-medium" oninput="preventNegative(this); calcDelta(1)" onchange="formatDecimal(this, 2)">
+                                    </div>
+                                    <div class="input-compact">
+                                        <input type="text" id="v-delta-1" placeholder="-" disabled class="w-full rounded-lg border input-field bg-gray-50 text-gray-500 font-bold text-center">
+                                    </div>
+                                </div>
+                                <!-- Trial 2 -->
+                                <div class="grid grid-cols-[20px_1fr_1fr_1fr] gap-2 items-center">
+                                    <span class="font-bold text-secondary text-sm text-center">2</span>
+                                    <div class="input-compact">
+                                        <input type="number" id="v-start-2" placeholder="0.00" step="0.01" min="0" class="w-full rounded-lg border input-field font-medium" oninput="preventNegative(this); calcDelta(2)" onchange="formatDecimal(this, 2)">
+                                    </div>
+                                    <div class="input-compact">
+                                        <input type="number" id="v-end-2" placeholder="0.00" step="0.01" min="0" class="w-full rounded-lg border input-field font-medium" oninput="preventNegative(this); calcDelta(2)" onchange="formatDecimal(this, 2)">
+                                    </div>
+                                    <div class="input-compact">
+                                        <input type="text" id="v-delta-2" placeholder="-" disabled class="w-full rounded-lg border input-field bg-gray-50 text-gray-500 font-bold text-center">
+                                    </div>
+                                </div>
+                                <!-- Trial 3 -->
+                                <div class="grid grid-cols-[20px_1fr_1fr_1fr] gap-2 items-center">
+                                    <span class="font-bold text-secondary text-sm text-center">3</span>
+                                    <div class="input-compact">
+                                        <input type="number" id="v-start-3" placeholder="0.00" step="0.01" min="0" class="w-full rounded-lg border input-field font-medium" oninput="preventNegative(this); calcDelta(3)" onchange="formatDecimal(this, 2)">
+                                    </div>
+                                    <div class="input-compact">
+                                        <input type="number" id="v-end-3" placeholder="0.00" step="0.01" min="0" class="w-full rounded-lg border input-field font-medium" oninput="preventNegative(this); calcDelta(3)" onchange="formatDecimal(this, 2)">
+                                    </div>
+                                    <div class="input-compact">
+                                        <input type="text" id="v-delta-3" placeholder="-" disabled class="w-full rounded-lg border input-field bg-gray-50 text-gray-500 font-bold text-center">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="volume-warning" class="text-[var(--color-error)] text-xs font-bold text-center mt-2 hidden">⚠️ 终读数必须大于初读数</div>
+                            <button onclick="calculateEDTA()" class="w-full py-3 rounded-lg shadow-lg text-lg calculate-button mt-6">计算 EDTA 浓度</button>
+                        </div>
+                        
+                        <div id="titration-result-box" class="mt-4 p-5 bg-surface rounded-xl border-2 border-[var(--accent-color)] hidden animate-target shadow-md">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-bold text-primary">平均浓度 C<sub>EDTA</sub></span>
+                                <span id="avg-edta" class="text-2xl font-black text-[var(--accent-color)] copyable-result" onclick="copyResult(this)">0.0000</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm border-t border-light pt-2">
+                                <div class="flex items-center">
+                                    <span class="text-primary font-bold mr-2">相对平均偏差:</span>
+                                    <span id="rsd-value" class="font-bold text-lg text-[var(--text-primary)] transition-colors duration-300">0.00%</span>
+                                    <span id="rsd-alert" class="hidden ml-2 text-[var(--color-error)] font-bold text-xs bg-red-50 px-2 py-0.5 rounded border border-red-100 animate-pulse">⚠️ 偏差过大</span>
+                                </div>
+                                <span class="text-xs text-secondary">(4位有效数字)</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-6 border-t border-light animate-target delay-400">
+                            <div class="flex justify-between items-center mb-3">
+                                <h2 class="text-sm font-bold text-secondary">标定记录 (点击行查看详情)</h2>
+                                <div class="space-x-2">
+                                    <button onclick="exportCSV()" class="action-btn px-3 py-1.5 bg-[#10B981] text-white rounded-lg text-xs font-bold shadow-sm">导出 CSV</button>
+                                    <button onclick="clearTitrationHistory()" class="action-btn px-3 py-1.5 bg-[var(--color-error)] text-white rounded-lg text-xs font-bold shadow-sm">清空</button>
+                                </div>
+                            </div>
+                            <div id="titration-history-container" class="overflow-x-auto"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="error-box" class="mx-6 mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg hidden text-sm font-bold text-center">
+            <p id="error-message"></p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 常量与配置 ---
+        const M_ZnO = 81.38; // g/mol
+        
+        let titrationHistoryData = [];
+        let prepHistoryData = [];
+        let currentAccent = 'violet', currentMode = 'prep', isAnimationEnabled = true;
+        let prepMassMode = 'direct';
+        
+        // 记录上一次计算时的状态，避免重复添加历史
+        let lastPrepState = null;
+        let lastTitrationState = null;
+        
+        // 配色方案
+        const colorPalettes = {
+            'violet': { light: { '--accent-color': '#8b5cf6', '--accent-hover': '#7c3aed', '--accent-bg': '#f3efff', '--button-text': '#ffffff' }, dark: { '--accent-color': '#d8b4fe', '--accent-hover': '#e9d5ff', '--accent-bg': '#2c1e45', '--button-text': '#0a0a0a' } },
+            'organic': { light: { '--accent-color': '#8c7851', '--accent-hover': '#7a6845', '--accent-bg': '#eaddcf', '--button-text': '#ffffff' }, dark: { '--accent-color': '#b39f7a', '--accent-hover': '#d4c095', '--accent-bg': '#2b2620', '--button-text': '#141414' } },
+            'starry-night': { light: { '--accent-color': '#1f488e', '--accent-hover': '#163a75', '--accent-bg': '#e6f0ff', '--button-text': '#ffffff' }, dark: { '--accent-color': '#ffdf66', '--accent-hover': '#ffea99', '--accent-bg': '#27497d', '--button-text': '#0a0a0a' } },
+            'emerald': { light: { '--accent-color': '#059669', '--accent-hover': '#047857', '--accent-bg': '#ecfdf5', '--button-text': '#ffffff' }, dark: { '--accent-color': '#34d399', '--accent-hover': '#6ee7b7', '--accent-bg': '#102d24', '--button-text': '#0a0a0a' } },
+        };
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0,0,0';
+        }
+
+        function applyTheme(accentName, modeName) {
+            currentAccent = accentName; currentMode = modeName;
+            const p = colorPalettes[accentName][modeName];
+            document.body.setAttribute('data-mode', modeName);
+            for (const [k, v] of Object.entries(p)) document.documentElement.style.setProperty(k, v);
+            document.documentElement.style.setProperty('--accent-color-rgb', hexToRgb(p['--accent-color']));
+            updateUIState();
+        }
+
+        function updateUIState() {
+            document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`accent-${currentAccent}`).classList.add('active');
+            document.getElementById('mode-text').textContent = currentMode === 'light' ? '浅色' : '深色';
+            document.getElementById('animation-text').textContent = isAnimationEnabled ? '动效: 开' : '动效: 关';
+            localStorage.setItem('edtaConfig', JSON.stringify({ accent: currentAccent, mode: currentMode, anim: isAnimationEnabled }));
+        }
+
+        window.toggleMode = () => applyTheme(currentAccent, document.body.getAttribute('data-mode') === 'light' ? 'dark' : 'light');
+        window.setAccent = (name) => applyTheme(name, document.body.getAttribute('data-mode'));
+        window.toggleAnimation = () => {
+            isAnimationEnabled = !isAnimationEnabled;
+            document.documentElement.style.setProperty('--animation-state', isAnimationEnabled ? 'running' : 'paused');
+            updateUIState();
+        };
+
+        // --- 核心切换逻辑 ---
+        window.setMode = function(modeName) {
+            document.querySelectorAll('.mode-tab').forEach(el => el.classList.remove('active-mode'));
+            document.getElementById(`tab-${modeName}`).classList.add('active-mode');
+            document.querySelectorAll('.page-dot').forEach(el => el.classList.remove('active'));
+            document.getElementById(`dot-${modeName}`).classList.add('active');
+
+            const track = document.getElementById('views-track');
+            track.style.transform = `translateX(${modeName === 'prep' ? '0%' : '-50%'})`;
+
+            setTimeout(() => adjustHeight(modeName), 50);
+            triggerAnimations(modeName);
+            hideMessages();
+        };
+
+        function adjustHeight(modeName) {
+            const activeView = document.getElementById(`view-${modeName}`);
+            const viewport = document.getElementById('views-viewport');
+            if (activeView && viewport) {
+                viewport.style.height = activeView.scrollHeight + 'px';
+            }
+        }
+        
+        window.addEventListener('resize', () => {
+             const activeMode = document.getElementById('tab-prep').classList.contains('active-mode') ? 'prep' : 'titration';
+             adjustHeight(activeMode);
+        });
+
+        function triggerAnimations(modeName) {
+            document.querySelectorAll('.animate-target').forEach(el => {
+                el.classList.remove('animate-stagger-enter');
+                el.style.opacity = '0';
+            });
+            const activeView = document.getElementById(`view-${modeName}`);
+            void activeView.offsetWidth; 
+            activeView.querySelectorAll('.animate-target').forEach(el => el.classList.add('animate-stagger-enter'));
+        }
+
+        // --- 辅助功能 ---
+        function hideMessages() {
+            document.getElementById('prep-result-box').classList.add('hidden');
+            document.getElementById('titration-result-box').classList.add('hidden');
+            document.getElementById('error-box').classList.add('hidden');
+            document.getElementById('volume-warning').classList.add('hidden');
+            const activeMode = document.getElementById('tab-prep').classList.contains('active-mode') ? 'prep' : 'titration';
+            setTimeout(() => adjustHeight(activeMode), 100);
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('error-box');
+            document.getElementById('error-message').textContent = msg;
+            box.classList.remove('hidden');
+            const activeMode = document.getElementById('tab-prep').classList.contains('active-mode') ? 'prep' : 'titration';
+            setTimeout(() => adjustHeight(activeMode), 100);
+        }
+
+        window.preventNegative = function(el) {
+            if (el.value < 0) el.value = Math.abs(el.value);
+        }
+        
+        window.formatDecimal = function(el, precision) {
+            if (el.value === '') return;
+            const val = parseFloat(el.value);
+            if (!isNaN(val)) {
+                el.value = val.toFixed(precision);
+            }
+        }
+
+        // 4位有效数字修约逻辑
+        function toSigFigs(num, n) {
+            if (num === 0) return "0.0000";
+            return num.toPrecision(n);
+        }
+
+        // --- 模态框逻辑 ---
+        window.showDetail = function(idx) {
+            const data = titrationHistoryData[idx];
+            if(!data) return;
+            
+            const modal = document.getElementById('detail-modal');
+            const content = document.getElementById('modal-content');
+            
+            // 兼容性处理：如果数据里有 rad 则用 rad，否则用 rsd（并标注为RSD）
+            const devValue = data.rad !== undefined ? data.rad : data.rsd;
+            const devLabel = data.rad !== undefined ? "相对平均偏差" : "RSD";
+            
+            let html = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-sm border-b border-[var(--border-light)] pb-2">
+                        <span class="text-[var(--text-secondary)]">时间: ${new Date(data.t).toLocaleString()}</span>
+                        <span class="font-bold text-[var(--accent-color)] text-lg">${data.c_edta_avg} M</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-sm bg-[var(--bg-canvas)] border border-[var(--border-light)] p-3 rounded-lg">
+                        <div>
+                            <span class="block text-xs text-[var(--text-secondary)]">C(Zn) 基准</span>
+                            <span class="font-bold text-[var(--text-primary)]">${data.c_zn} M</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs text-[var(--text-secondary)]">V(Zn) 移取</span>
+                            <span class="font-bold text-[var(--text-primary)]">${data.v_zn} mL</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs text-[var(--text-secondary)]">${devLabel}</span>
+                            <span class="${devValue > 0.3 ? 'text-red-500 font-bold' : 'text-[var(--text-primary)]'}">${devValue.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">平行测定详情</h4>
+                        <table class="w-full text-sm text-center border border-[var(--border-light)] rounded overflow-hidden">
+                            <thead class="bg-[var(--accent-bg)] text-[var(--text-primary)]">
+                                <tr>
+                                    <th class="py-2">#</th>
+                                    <th class="py-2">初读数</th>
+                                    <th class="py-2">终读数</th>
+                                    <th class="py-2">消耗(mL)</th>
+                                    <th class="py-2">C(M)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[var(--border-light)]">
+            `;
+            
+            data.trials.forEach(t => {
+                html += `
+                    <tr>
+                        <td class="py-2 text-[var(--text-secondary)]">${t.id}</td>
+                        <td class="py-2 text-[var(--text-primary)]">${t.v_start !== undefined ? t.v_start.toFixed(2) : '-'}</td>
+                        <td class="py-2 text-[var(--text-primary)]">${t.v_end !== undefined ? t.v_end.toFixed(2) : '-'}</td>
+                        <td class="py-2 font-medium text-[var(--text-primary)]">${t.v_used.toFixed(2)}</td>
+                        <td class="py-2 text-[var(--accent-color)] font-bold">${toSigFigs(t.c, 4)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-right">
+                         <button onclick="deleteTitrationItem(${idx})" class="text-xs text-red-500 hover:underline">删除此条记录</button>
+                    </div>
+                </div>
+            `;
+            
+            content.innerHTML = html;
+            modal.classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        window.deleteTitrationItem = function(idx) {
+            if(confirm('确定删除这条记录吗？')) {
+                delTitrationHistory(idx);
+                closeModal();
+            }
+        }
+
+        // --- 计算模式一：锌液配制 ---
+        window.togglePrepMassMode = function() {
+            const radios = document.getElementsByName('massModePrep');
+            let val = 'direct';
+            for (const r of radios) if(r.checked) val = r.value;
+            prepMassMode = val;
+            
+            document.getElementById('prep-mass-direct').classList.toggle('hidden', val !== 'direct');
+            document.getElementById('prep-mass-diff').classList.toggle('hidden', val !== 'diff');
+            hideMessages();
+            setTimeout(() => adjustHeight('prep'), 50);
+        }
+
+        window.calculateZnConc = function() {
+            let mass = 0;
+            let massDetails = {};
+            let m1, m2;
+
+            if (prepMassMode === 'direct') {
+                mass = parseFloat(document.getElementById('mass-zno').value);
+                massDetails = { mode: 'direct', m: mass };
+            } else {
+                m1 = parseFloat(document.getElementById('mass-zno-m1').value);
+                m2 = parseFloat(document.getElementById('mass-zno-m2').value);
+                if (isNaN(m1) || isNaN(m2)) {
+                    return showError("请输入完整的质量数据");
+                }
+                mass = Math.abs(m1 - m2);
+                massDetails = { mode: 'diff', m1, m2, m: mass };
+            }
+
+            const volume = parseFloat(document.getElementById('volume-flask').value);
+            
+            if (isNaN(mass) || mass <= 0) return showError("质量无效");
+            if (isNaN(volume) || volume <= 0) return showError("请输入有效的定容体积");
+
+            // 计算浓度 C = m / (M * V_L)
+            const conc = mass / (M_ZnO * (volume / 1000));
+            
+            // 显示结果 (4位有效数字)
+            const displayConc = toSigFigs(conc, 4);
+            document.getElementById('zinc-concentration').textContent = displayConc;
+            
+            // 自动填充到Tab 2
+            document.getElementById('conc-zn-input').value = conc.toFixed(5);
+            
+            document.getElementById('prep-result-box').classList.remove('hidden');
+            
+            // 构建当前状态字符串，用于去重
+            const currentState = JSON.stringify({
+                mode: prepMassMode,
+                m: prepMassMode === 'direct' ? mass : null,
+                m1: prepMassMode === 'diff' ? m1 : null,
+                m2: prepMassMode === 'diff' ? m2 : null,
+                vol: volume
+            });
+
+            // 仅当状态改变时保存历史
+            if (currentState !== lastPrepState) {
+                prepHistoryData.unshift({
+                    t: new Date(),
+                    massInfo: massDetails,
+                    vol: volume,
+                    conc: conc,
+                    concDisplay: displayConc
+                });
+                savePrepHistory();
+                lastPrepState = currentState;
+            }
+
+            setTimeout(() => adjustHeight('prep'), 100);
+        };
+        
+        window.usePrepData = function(idx) {
+            const data = prepHistoryData[idx];
+            if (data) {
+                document.getElementById('conc-zn-input').value = data.conc.toFixed(5);
+                setMode('titration');
+                
+                // 简单的视觉反馈
+                const input = document.getElementById('conc-zn-input');
+                input.classList.add('ring-2', 'ring-green-400');
+                setTimeout(() => input.classList.remove('ring-2', 'ring-green-400'), 1000);
+            }
+        }
+
+        window.renderPrepHistory = function() {
+            const el = document.getElementById('prep-history-container');
+            if(!el) return;
+            if(!prepHistoryData.length) {
+                el.innerHTML = '<p class="text-xs text-center p-4 text-gray-400">暂无记录</p>';
+                return;
+            }
+            
+            let h = '<table class="history-table"><thead><tr><th>时间</th><th>质量(g)</th><th>体积(mL)</th><th>C(Zn)</th><th>操作</th></tr></thead><tbody>';
+            
+            prepHistoryData.forEach((d, i) => {
+                const time = new Date(d.t).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+                let massStr = d.massInfo.m.toFixed(4);
+                if(d.massInfo.mode === 'diff') {
+                    massStr += ` <span class="text-[9px] text-gray-400 block">(${d.massInfo.m1}-${d.massInfo.m2})</span>`;
+                }
+                
+                h += `<tr class="clickable-row" onclick="usePrepData(${i})">
+                    <td>${time}</td>
+                    <td>${massStr}</td>
+                    <td>${d.vol}</td>
+                    <td class="font-bold text-[var(--accent-color)]">${d.concDisplay}</td>
+                    <td><span class="text-xs text-green-600 font-bold border border-green-200 bg-green-50 px-2 py-0.5 rounded whitespace-nowrap">使用</span></td>
+                </tr>`;
+            });
+            el.innerHTML = h + '</tbody></table>';
+        }
+        
+        window.savePrepHistory = () => {
+            localStorage.setItem('edta_prep_history', JSON.stringify(prepHistoryData));
+            renderPrepHistory();
+        }
+        window.clearPrepHistory = () => {
+            prepHistoryData = [];
+            savePrepHistory();
+            lastPrepState = null; // 重置状态，允许下次相同输入保存
+        }
+
+        // --- 计算模式二：EDTA 标定 ---
+        window.calcDelta = function(id) {
+            const start = parseFloat(document.getElementById(`v-start-${id}`).value);
+            const end = parseFloat(document.getElementById(`v-end-${id}`).value);
+            const deltaInput = document.getElementById(`v-delta-${id}`);
+            
+            if (!isNaN(start) && !isNaN(end)) {
+                if (end > start) {
+                    deltaInput.value = (end - start).toFixed(2);
+                    deltaInput.classList.remove('error-border');
+                    document.getElementById('volume-warning').classList.add('hidden');
+                } else {
+                    deltaInput.value = "Error";
+                    deltaInput.classList.add('error-border');
+                    document.getElementById('volume-warning').classList.remove('hidden');
+                }
+            } else {
+                deltaInput.value = "";
+            }
+        }
+
+        window.calculateEDTA = function() {
+            const c_Zn = parseFloat(document.getElementById('conc-zn-input').value);
+            const v_pipette = parseFloat(document.getElementById('vol-pipette').value);
+            
+            if (isNaN(c_Zn) || c_Zn <= 0) return showError("请输入有效的锌标准溶液浓度");
+            if (isNaN(v_pipette) || v_pipette <= 0) return showError("请输入有效的移取体积");
+
+            let trials = [];
+            
+            // 收集输入数据用于状态比较
+            let currentInputs = [c_Zn, v_pipette];
+
+            for(let i=1; i<=3; i++) {
+                const v_start = parseFloat(document.getElementById(`v-start-${i}`).value);
+                const v_end = parseFloat(document.getElementById(`v-end-${i}`).value);
+                
+                // 添加到状态数组
+                currentInputs.push(document.getElementById(`v-start-${i}`).value); 
+                currentInputs.push(document.getElementById(`v-end-${i}`).value);
+
+                if (!isNaN(v_start) && !isNaN(v_end) && v_end > v_start) {
+                    const v_consumed = v_end - v_start;
+                    
+                    // 原理：n(EDTA) = n(Zn) => C(EDTA) * V(EDTA) = C(Zn) * V(Zn)
+                    // C(EDTA) = (C(Zn) * V(Zn)) / V(EDTA)
+                    const c_edta = (c_Zn * v_pipette) / v_consumed;
+                    
+                    trials.push({ 
+                        id: i, 
+                        v_start: v_start, // 记录初读数
+                        v_end: v_end,     // 记录终读数
+                        v_used: v_consumed, 
+                        c: c_edta 
+                    });
+                }
+            }
+            
+            if(trials.length < 2) return showError("请至少输入2组有效的滴定数据");
+            
+            // 计算统计量
+            const avg = trials.reduce((a,b)=>a+b.c,0)/trials.length;
+            
+            // 改为计算平均偏差 (Average Deviation)
+            const sumAbsDev = trials.reduce((a,b)=>a+Math.abs(b.c-avg), 0);
+            const avgDev = sumAbsDev / trials.length;
+            
+            // 计算相对平均偏差 (Relative Average Deviation, RAD)
+            const rad = (avgDev / avg) * 100;
+
+            // 显示结果 - 严格4位有效数字
+            const avg_display = toSigFigs(avg, 4);
+
+            document.getElementById('avg-edta').textContent = avg_display;
+            
+            const rsdEl = document.getElementById('rsd-value');
+            const rsdAlert = document.getElementById('rsd-alert');
+            
+            rsdEl.textContent = rad.toFixed(2) + '%';
+            
+            if(rad > 0.30) {
+                rsdEl.className = "font-black text-lg text-[var(--color-error)]";
+                if(rsdAlert) rsdAlert.classList.remove('hidden');
+            } else {
+                 rsdEl.className = "font-bold text-lg text-[var(--text-primary)]";
+                 if(rsdAlert) rsdAlert.classList.add('hidden');
+            }
+            
+            document.getElementById('titration-result-box').classList.remove('hidden');
+
+            // 构建当前状态字符串
+            const currentState = JSON.stringify(currentInputs);
+
+            // 仅当状态改变时保存历史
+            if (currentState !== lastTitrationState) {
+                titrationHistoryData.unshift({
+                    t: new Date(),
+                    c_zn: c_Zn,
+                    v_zn: v_pipette,
+                    c_edta_avg: avg_display,
+                    rad: rad, // 保存新的 RAD 数据
+                    trials: trials
+                });
+                saveTitrationHistory();
+                lastTitrationState = currentState;
+            }
+
+            setTimeout(() => adjustHeight('titration'), 100);
+        };
+
+        // 历史记录
+        window.renderTitrationHistory = function() {
+            const el = document.getElementById('titration-history-container');
+            if (!el) return;
+            
+            if(!titrationHistoryData.length) { 
+                el.innerHTML = '<p class="text-xs text-center p-4 text-gray-400">暂无历史记录</p>'; 
+                return; 
+            }
+
+            let h = '<table class="history-table"><thead><tr>';
+            h += '<th>时间</th><th>C(Zn)</th><th>C(EDTA)</th><th>相对平均偏差</th><th>操作</th></tr></thead><tbody>';
+
+            titrationHistoryData.forEach((d, i) => {
+                const time = new Date(d.t).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+                // 兼容旧数据 (RSD) 和新数据 (RAD)
+                const devValue = d.rad !== undefined ? d.rad : d.rsd;
+                
+                h += `<tr class="clickable-row" onclick="showDetail(${i})">`;
+                h += `<td>${time}</td>`;
+                h += `<td>${toSigFigs(parseFloat(d.c_zn), 4)}</td>`;
+                h += `<td class="font-bold text-[var(--accent-color)]">${d.c_edta_avg}</td>`;
+                h += `<td class="${devValue > 0.3 ? 'text-red-500 font-bold' : ''}">${devValue.toFixed(2)}%</td>`;
+                h += `<td><span class="text-xs text-blue-500 underline">详情</span></td></tr>`;
+            });
+            el.innerHTML = h + '</tbody></table>';
+        }
+        
+        window.saveTitrationHistory = () => {
+            localStorage.setItem('edta_history', JSON.stringify(titrationHistoryData));
+            renderTitrationHistory();
+        };
+        window.delTitrationHistory = (idx) => {
+            titrationHistoryData.splice(idx,1);
+            saveTitrationHistory();
+            setTimeout(() => adjustHeight('titration'), 50);
+        };
+        window.clearTitrationHistory = () => {
+            titrationHistoryData = [];
+            saveTitrationHistory();
+            lastTitrationState = null; // 重置状态
+            setTimeout(() => adjustHeight('titration'), 50);
+        };
+        
+        window.exportCSV = function() {
+             if (!titrationHistoryData.length) return showError("无数据可导出");
+             
+             let csv = "时间,C_Zn(mol/L),V_Zn(mL),C_EDTA_Avg(mol/L),相对平均偏差(%),Trial1_Start,Trial1_End,Trial1_V,Trial1_C,Trial2_Start,Trial2_End,Trial2_V,Trial2_C,Trial3_Start,Trial3_End,Trial3_V,Trial3_C\n";
+             
+             titrationHistoryData.forEach(d => {
+                 const devValue = d.rad !== undefined ? d.rad : d.rsd;
+                 let row = `${new Date(d.t).toLocaleString()},${d.c_zn},${d.v_zn},${d.c_edta_avg},${devValue.toFixed(2)}`;
+                 
+                 for(let i=0; i<3; i++) {
+                     const t = d.trials.find(x => x.id === i+1);
+                     if(t) row += `,${t.v_start},${t.v_end},${t.v_used.toFixed(2)},${toSigFigs(t.c, 4)}`;
+                     else row += `,-,-,-,-`;
+                 }
+                 csv += row + "\n";
+             });
+             
+             const blob = new Blob(["\ufeff"+csv], {type: 'text/csv;charset=utf-8'});
+             const url = URL.createObjectURL(blob);
+             const a = document.createElement('a');
+             a.href = url;
+             a.download = `edta_standardization.csv`;
+             a.click();
+        }
+
+        window.copyResult = (el) => {
+            navigator.clipboard.writeText(el.textContent);
+            const t = document.getElementById('toast-notification');
+            t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const cfg = JSON.parse(localStorage.getItem('edtaConfig'));
+                if(cfg) { applyTheme(cfg.accent, cfg.mode); isAnimationEnabled = cfg.anim; }
+                else applyTheme('violet', 'light');
+                
+                titrationHistoryData = JSON.parse(localStorage.getItem('edta_history')||'[]');
+                prepHistoryData = JSON.parse(localStorage.getItem('edta_prep_history')||'[]');
+                
+                renderTitrationHistory();
+                renderPrepHistory();
+                
+                setTimeout(() => setMode('prep'), 100);
+                
+                // 背景粒子：生成化学符号
+                const fc = document.getElementById('floating-container');
+                const symbols = ['Zn²⁺', 'EDTA', 'H₂Y²⁻', 'Cl⁻', 'ZnO', 'H⁺', 'pH=5', 'Zn-Y', 'mol/L', 'buffer', 'NH₃'];
+                
+                for(let i=0;i<40;i++) { 
+                    const d = document.createElement('div'); 
+                    d.className='floating-element';
+                    d.textContent = symbols[Math.floor(Math.random()*symbols.length)];
+                    d.style.setProperty('--initial-x-offset', Math.random()*100+'vw');
+                    const scale = 0.8 + Math.random() * 1.5;
+                    d.style.fontSize = scale + 'rem';
+                    d.style.animationDuration = (15 + Math.random() * 25) + 's';
+                    d.style.animationDelay = -Math.random()*30+'s';
+                    fc.appendChild(d);
+                }
+                
+                // 首次访问提示滑动
+                if(window.innerWidth < 640 && !localStorage.getItem('seenSwipeEDTA')) {
+                    document.getElementById('swipe-hint').style.display = 'flex';
+                    localStorage.setItem('seenSwipeEDTA','1');
+                }
+            } catch(e) { console.error(e); }
+        });
+
+        // 触摸滑动逻辑
+        let tx = 0, ty = 0;
+        let isSwipeIgnored = false;
+
+        document.addEventListener('touchstart', e => { 
+            tx = e.touches[0].clientX; 
+            ty = e.touches[0].clientY;
+            // 忽略 Modal 和滚动容器内的滑动
+            const scrollContainer = e.target.closest('.overflow-x-auto, #modal-content');
+            if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+                isSwipeIgnored = true;
+            } else {
+                isSwipeIgnored = false;
+            }
+        }, {passive:true});
+
+        document.addEventListener('touchend', e => {
+            if (isSwipeIgnored) return;
+            const dx = e.changedTouches[0].clientX - tx;
+            const dy = e.changedTouches[0].clientY - ty;
+            
+            if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*2) {
+                const active = document.getElementById('tab-prep').classList.contains('active-mode');
+                if(dx < 0 && active) setMode('titration');
+                if(dx > 0 && !active) setMode('prep');
+            }
+        }, {passive:true});
+
+    </script>
+</body>
+</html>
