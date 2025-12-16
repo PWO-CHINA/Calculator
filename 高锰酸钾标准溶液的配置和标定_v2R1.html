@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>高锰酸钾标准溶液的配制与标定</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 基础样式设置 */
+        :root {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            --bg-canvas: #fbf7ff; /* 默认为浅紫色调 */
+            --bg-surface: #ffffff;
+            --text-primary: #1e1b4b;
+            --text-secondary: #4c1d95;
+            --accent-color: #7c3aed; /* 高锰酸钾紫 */
+            --accent-color-dark: #6d28d9;
+            --accent-bg: #f3e8ff;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --border-light: #e9d5ff;
+            --button-text: #ffffff;
+            --accent-color-rgb: 124, 58, 237;
+            --animation-state: running;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.1) 0%, 
+                var(--bg-canvas) 60%
+            );
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 1.5rem 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .main-calculator-card {
+            position: relative;
+            z-index: 20;
+            width: 90%;
+            max-width: 800px;
+            margin: 0;
+            margin-bottom: 4rem; 
+        }
+
+        /* --- 动画背景 --- */
+        #floating-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none; 
+            z-index: 1;
+        }
+        
+        .floating-element {
+            position: absolute;
+            top: 0;
+            left: var(--random-x);
+            color: var(--accent-color);
+            opacity: 0.12;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            animation: waterfall linear infinite;
+            animation-play-state: var(--animation-state);
+            user-select: none;
+            font-family: 'Times New Roman', serif;
+            will-change: transform;
+            transform: translate3d(0, -100vh, 0); 
+        }
+
+        @keyframes waterfall {
+            0% { transform: translate3d(0, -100vh, 0); }
+            100% { transform: translate3d(0, 150vh, 0); }
+        }
+        
+        /* --- 深色模式 --- */
+        body[data-mode="dark"] {
+            --bg-canvas: #0f172a;           
+            --bg-surface: #1e293b;          
+            --text-primary: #f8fafc;        
+            --text-secondary: #94a3b8;      
+            --color-error: #f87171;         
+            --border-light: #334155;        
+            --button-text: #0f172a;         
+             background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.2) 0%, 
+                var(--bg-canvas) 50%
+            );
+        }
+
+        /* 通用类 */
+        .bg-surface { background-color: var(--bg-surface); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-light { border-color: var(--border-light); }
+        .accent-bg { background-color: var(--accent-bg); }
+        
+        /* 输入框样式 */
+        .input-field {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+            background-color: var(--bg-surface);
+            transition: border-color 0.3s, background-color 0.5s;
+        }
+        .input-field:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.3);
+            outline: none;
+        }
+
+        .theme-button { 
+            position: relative; 
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .theme-button:hover {
+            transform: scale(1.1);
+        }
+        .theme-button.active {
+            transform: scale(1.15);
+            box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
+        }
+
+        /* 表格样式 */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .result-table th, .result-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+        .result-table th {
+            background-color: var(--accent-bg); 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .result-table tr:hover td {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+
+        /* 按钮动效 */
+        .calculate-button {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color-dark) 100%);
+            color: var(--button-text); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            font-weight: 700;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .calculate-button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+            pointer-events: none;
+        }
+        .calculate-button:hover {
+            filter: brightness(1.1); 
+            box-shadow: 0 8px 20px -4px rgba(var(--accent-color-rgb), 0.5); 
+            transform: translateY(-2px); 
+        }
+        .calculate-button:active {
+            filter: brightness(0.95); 
+            transform: scale(0.98); 
+            box-shadow: 0 4px 10px -2px rgba(var(--accent-color-rgb), 0.3);
+        }
+        .active-scale-98:active { transform: scale(0.98); }
+
+        .main-title { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1.2; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+
+        /* Toast 提示样式 */
+        #toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .copyable-result { cursor: pointer; border-bottom: 1px dashed var(--accent-color); }
+        .copyable-result:active { opacity: 0.7; }
+
+        /* 针对小屏幕优化表格 */
+        @media (max-width: 640px) {
+            .result-table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .dot-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: var(--border-light);
+            transition: all 0.3s ease;
+        }
+        .dot-indicator.active {
+            background-color: var(--accent-color);
+            transform: scale(1.2); width: 20px; border-radius: 4px;
+        }
+
+        @keyframes swipe-hint {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(10px); opacity: 1; }
+        }
+        .swipe-hint-icon { animation: swipe-hint 1.5s infinite; }
+
+        /* 历史记录展开样式 */
+        .history-details {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out; opacity: 0;
+        }
+        .history-details.open { max-height: 1000px; opacity: 1; margin-top: 1rem; }
+        .history-summary-row { cursor: pointer; transition: background-color 0.2s; }
+        .history-summary-row:hover { background-color: rgba(var(--accent-color-rgb), 0.05); }
+        .expand-icon { transition: transform 0.3s; }
+        .expand-icon.open { transform: rotate(180deg); }
+        
+        .reaction-card {
+            background-color: var(--bg-canvas);
+            border-left: 4px solid var(--accent-color);
+        }
+        .formula { font-family: 'Times New Roman', serif; }
+    </style>
+</head>
+<body data-mode="light">
+    
+    <div id="floating-container"></div>
+    
+    <!-- Toast Notification -->
+    <div id="toast-notification">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>内容已复制</span>
+    </div>
+
+    <div class="main-calculator-card bg-surface shadow-2xl rounded-2xl p-6 sm:p-8 space-y-6 border-t-8 border-[var(--accent-color)] transition-colors duration-500">
+
+        <!-- 顶部控制区 -->
+        <div class="flex flex-col space-y-4 pb-4 border-b border-[var(--border-light)] transition-colors duration-500">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-wrap items-center space-x-3">
+                    <span class="text-sm font-medium text-[var(--text-secondary)]">界面模式:</span>
+                    <button onclick="toggleMode()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="mode-text">浅色</span>
+                    </button>
+                    <button onclick="toggleAnimation()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="animation-text">动效开</span>
+                    </button>
+                </div>
+                <!-- 主题色选择 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="setAccent('purple')" class="theme-button w-6 h-6 rounded-full active" style="background: #7c3aed;" title="高锰酸钾紫"></button>
+                    <button onclick="setAccent('blue')" class="theme-button w-6 h-6 rounded-full" style="background: #0284c7;" title="深海蓝"></button>
+                    <button onclick="setAccent('rose')" class="theme-button w-6 h-6 rounded-full" style="background: #e11d48;" title="终点粉"></button>
+                    <button onclick="setAccent('slate')" class="theme-button w-6 h-6 rounded-full" style="background: #475569;" title="实验灰"></button>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-2">
+                <h1 class="main-title text-primary">高锰酸钾标准溶液的<br class="sm:hidden">配制和标定</h1>
+            </div>
+
+            <!-- 原理展开折叠 -->
+            <div class="border border-[var(--border-light)] rounded-lg overflow-hidden">
+                <button onclick="togglePrinciple()" class="w-full px-4 py-2 bg-[var(--accent-bg)] text-left flex justify-between items-center text-sm font-bold text-[var(--accent-color)]">
+                    <span>📖 实验原理与反应式</span>
+                    <svg id="principle-arrow" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="principle-content" class="hidden p-4 text-sm text-[var(--text-secondary)] space-y-3 bg-[var(--bg-canvas)]">
+                    <div class="space-y-1">
+                        <p class="font-bold">1. 标定原理 (Na₂C₂O₄ 基准法):</p>
+                        <p>在酸性溶液中(H₂SO₄)，用 Na₂C₂O₄ 标定 KMnO₄ 溶液。反应需要在75~85℃进行，利用Mn²⁺的自催化作用。</p>
+                        <p class="formula pl-4 text-xs sm:text-sm">2MnO₄⁻ + 5C₂O₄²⁻ + 16H⁺ ⇌ 2Mn²⁺ + 10CO₂↑ + 8H₂O</p>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="font-bold">2. 计量关系:</p>
+                        <p class="formula pl-4">n(MnO₄⁻) : n(C₂O₄²⁻) = 2 : 5</p>
+                        <p class="formula pl-4">M(Na₂C₂O₄) = 134.00 g/mol</p>
+                        <p class="formula pl-4">c(KMnO₄) = (2/5) × [m(Na₂C₂O₄)/M] / V(KMnO₄)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 模块1：配制助手 (辅助计算) -->
+        <div class="bg-[var(--accent-bg)] p-4 rounded-lg border border-[var(--border-light)] transition-colors duration-500 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-2 opacity-5 text-4xl font-serif font-bold text-[var(--accent-color)]">Prep</div>
+            <h2 class="section-title text-sm uppercase tracking-wider opacity-80 mb-3">🧪 配制计算助手 (可选)</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">目标浓度 (mol/L)</label>
+                    <input type="number" id="prep-c" placeholder="0.02" class="w-full rounded-lg p-2 border input-field tabular-nums text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">目标体积 (L)</label>
+                    <input type="number" id="prep-v" placeholder="0.5" class="w-full rounded-lg p-2 border input-field tabular-nums text-sm">
+                </div>
+                <div class="bg-surface/50 p-2 rounded border border-[var(--border-light)] flex justify-between items-center">
+                    <span class="text-xs text-secondary font-medium">理论需称取 KMnO₄:</span>
+                    <span id="prep-result" class="font-bold text-[var(--accent-color)] text-lg tabular-nums">0.00 g</span>
+                </div>
+            </div>
+            <p class="text-[10px] text-[var(--text-secondary)] mt-2 opacity-70">*注：KMnO₄摩尔质量按 158.03 g/mol 计算。由于KMnO₄非基准物质，实际称量值无需精确一致。</p>
+        </div>
+
+        <!-- 模块2：标定数据录入 -->
+        <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
+                <h2 class="section-title flex items-center gap-2">
+                    📊 标定数据录入 (Na₂C₂O₄)
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--accent-color)] lg:hidden swipe-hint-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </h2>
+                <span class="text-xs text-[var(--text-secondary)]">请输入基准物 Na₂C₂O₄ 质量和滴定体积</span>
+            </div>
+            
+            <div id="trials-container" class="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory hide-scrollbar pb-2">
+                <!-- 动态生成的输入卡片 -->
+            </div>
+            
+            <div id="trial-indicators" class="flex justify-center space-x-2 lg:hidden">
+                <!-- JS 填充 dots -->
+            </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="calculateResults()" class="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-lg calculate-button mt-4">
+            计算浓度 c & 统计结果
+        </button>
+
+        <!-- 结果展示区 -->
+        <div id="result-section" class="hidden space-y-6">
+            
+            <!-- 统计结果卡片 -->
+            <div class="grid grid-cols-1 gap-4">
+                <div class="p-5 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative overflow-hidden" id="card-cu">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 text-6xl font-serif font-bold text-[var(--accent-color)]">KMnO₄</div>
+                    <h3 class="font-bold text-[var(--accent-color)] mb-4 border-b pb-2">标定结果汇总 (KMnO₄)</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-secondary">平均浓度 c(KMnO₄):</span>
+                            <span class="font-bold text-[var(--accent-color)] text-2xl tabular-nums copyable-result" onclick="copyText(this)" id="final-avg-c">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-secondary">相对平均偏差 (RAD):</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-primary tabular-nums text-lg" id="final-rad">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 表格 -->
+            <div class="border-t-2 border-[var(--accent-color)] pt-6 mt-6">
+                <h2 class="section-title text-center mb-4">📝 数据记录与处理表</h2>
+                <div class="overflow-x-auto rounded-lg shadow-sm border border-[var(--border-light)]">
+                    <table class="result-table bg-surface">
+                        <tbody id="result-table-body">
+                            <!-- JS 填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- 历史记录控制 -->
+        <div class="pt-6 border-t border-[var(--border-light)]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title mb-0">💾 历史记录</h2>
+                <div class="space-x-2">
+                     <button onclick="exportCSV()" class="px-3 py-1.5 bg-[#10b981] text-white rounded text-sm font-medium hover:bg-[#059669] transition active-scale-98">
+                        导出 CSV
+                    </button>
+                    <button onclick="clearHistory()" class="px-3 py-1.5 bg-[var(--color-error)] text-white rounded text-sm font-medium hover:opacity-90 transition active-scale-98">
+                        清空
+                    </button>
+                </div>
+            </div>
+            <div id="history-container" class="space-y-3">
+                <!-- 历史卡片 -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 核心常量与逻辑 ---
+        
+        const HISTORY_KEY = 'kmno4TitrationHistory_v1';
+        let historyData = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        
+        let lastSubmissionHash = "";
+        const M_NA2C2O4 = 134.00; // 基准物质摩尔质量
+        const M_KMNO4 = 158.03;   // 高锰酸钾摩尔质量(用于配制估算)
+
+        // 配制助手监听
+        function setupPrepListener() {
+            const inputs = [document.getElementById('prep-c'), document.getElementById('prep-v')];
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    const c = parseFloat(inputs[0].value);
+                    const v = parseFloat(inputs[1].value);
+                    const res = document.getElementById('prep-result');
+                    if(c > 0 && v > 0) {
+                        const m = c * v * M_KMNO4;
+                        res.textContent = m.toFixed(2) + " g";
+                    } else {
+                        res.textContent = "0.00 g";
+                    }
+                });
+            });
+        }
+
+        function initTrials() {
+            const container = document.getElementById('trials-container');
+            const indicatorsContainer = document.getElementById('trial-indicators');
+            let html = '';
+            let indicatorsHtml = '';
+
+            for (let i = 1; i <= 3; i++) {
+                html += `
+                <div class="w-full flex-shrink-0 snap-center lg:w-auto p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative trial-card transition-all duration-300">
+                    <div class="absolute top-2 right-2 text-xs font-bold text-[var(--accent-color)] opacity-30 text-4xl select-none">${i}</div>
+                    <h3 class="font-bold text-primary mb-3 text-sm">第 ${i} 次测定</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="bg-[var(--bg-canvas)] p-2 rounded border border-[var(--border-light)]">
+                            <p class="text-xs font-bold text-[var(--accent-color)] mb-1">Na₂C₂O₄ 质量 (减量法)</p>
+                            <div class="grid grid-cols-2 gap-2 mb-1">
+                                <div>
+                                    <label class="block text-[10px] text-secondary">倾倒前 m₁ (g)</label>
+                                    <input type="number" id="m1-${i}" oninput="liveCalcMass(${i})" step="0.0001" class="w-full rounded p-1 border input-field text-sm tabular-nums" placeholder="0.0000">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-secondary">倾倒后 m₂ (g)</label>
+                                    <input type="number" id="m2-${i}" oninput="liveCalcMass(${i})" step="0.0001" class="w-full rounded p-1 border input-field text-sm tabular-nums" placeholder="0.0000">
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs border-t border-dashed border-gray-300 pt-1">
+                                <span>质量 m:</span>
+                                <span id="disp-m-${i}" class="font-bold text-primary tabular-nums">-</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">滴定管初读数 V<sub>初</sub> (mL)</label>
+                            <input type="number" id="v-start-${i}" min="0" oninput="liveCalcVol(${i})" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">滴定管终读数 V<sub>终</sub> (mL)</label>
+                            <input type="number" id="v-end-${i}" min="0" oninput="liveCalcVol(${i})" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="25.00">
+                        </div>
+                        
+                        <div class="pt-2 border-t border-dashed border-[var(--border-light)] text-xs flex justify-between items-center">
+                             <span class="text-secondary">消耗体积 V (mL):</span> 
+                             <span id="disp-v-${i}" class="tabular-nums font-bold text-[var(--accent-color)] text-sm">-</span>
+                        </div>
+                    </div>
+                </div>`;
+                
+                indicatorsHtml += `<div class="dot-indicator ${i === 1 ? 'active' : ''}" data-index="${i-1}"></div>`;
+            }
+            container.innerHTML = html;
+            indicatorsContainer.innerHTML = indicatorsHtml;
+
+            setupScrollObserver(container);
+        }
+
+        function setupScrollObserver(container) {
+            const cards = container.querySelectorAll('.trial-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const index = Array.from(cards).indexOf(entry.target);
+                        updateDots(index);
+                    }
+                });
+            }, { root: container, threshold: 0.6 });
+
+            cards.forEach(card => observer.observe(card));
+        }
+
+        function updateDots(activeIndex) {
+            const dots = document.querySelectorAll('.dot-indicator');
+            dots.forEach((dot, idx) => {
+                if (idx === activeIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function liveCalcMass(i) {
+            const m1 = parseFloat(document.getElementById(`m1-${i}`).value);
+            const m2 = parseFloat(document.getElementById(`m2-${i}`).value);
+            const disp = document.getElementById(`disp-m-${i}`);
+            if (!isNaN(m1) && !isNaN(m2)) {
+                const diff = m1 - m2;
+                disp.textContent = diff.toFixed(4) + " g";
+                if (diff <= 0) disp.classList.add('text-red-500');
+                else disp.classList.remove('text-red-500');
+            } else {
+                disp.textContent = "-";
+            }
+        }
+
+        function liveCalcVol(i) {
+            const v1 = parseFloat(document.getElementById(`v-start-${i}`).value);
+            const v2 = parseFloat(document.getElementById(`v-end-${i}`).value);
+            const disp = document.getElementById(`disp-v-${i}`);
+            if (!isNaN(v1) && !isNaN(v2)) {
+                const diff = v2 - v1;
+                disp.textContent = diff.toFixed(2);
+                if (diff <= 0) disp.classList.add('text-red-500');
+                else disp.classList.remove('text-red-500');
+            } else {
+                disp.textContent = "-";
+            }
+        }
+
+        function calcRAD(arr) {
+            if (arr.length < 1) return 0;
+            const mean = arr.reduce((a, b) => a + b) / arr.length;
+            if (mean === 0) return 0;
+            const sumAbsDiff = arr.reduce((sum, val) => sum + Math.abs(val - mean), 0);
+            const meanDev = sumAbsDiff / arr.length;
+            return (meanDev / mean) * 100;
+        }
+        
+        function calcMean(arr) {
+            return arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+        }
+
+        function calculateResults() {
+            let results = [];
+            let cArr = [];
+            let rawInputs = { data: [] };
+            let validCount = 0;
+
+            for (let i = 1; i <= 3; i++) {
+                const m1 = parseFloat(document.getElementById(`m1-${i}`).value);
+                const m2 = parseFloat(document.getElementById(`m2-${i}`).value);
+                const vStart = parseFloat(document.getElementById(`v-start-${i}`).value);
+                const vEnd = parseFloat(document.getElementById(`v-end-${i}`).value);
+                
+                if (isNaN(m1) || isNaN(m2) || isNaN(vStart) || isNaN(vEnd)) {
+                    results.push(null);
+                    rawInputs.data.push(null);
+                    continue;
+                }
+
+                const mStd = m1 - m2; // Na2C2O4 质量
+                const vConsumed = vEnd - vStart; // KMnO4 体积 mL
+
+                if (mStd <= 0 || vConsumed <= 0) {
+                     results.push({ error: "数据错误 (≤0)" });
+                     continue;
+                }
+
+                validCount++;
+
+                // 计算逻辑:
+                // n(C2O4) = mStd / 134.00
+                // n(MnO4) = (2/5) * n(C2O4)
+                // c(MnO4) = n(MnO4) / (vConsumed * 10^-3)
+                const n_std = mStd / M_NA2C2O4;
+                const n_kmno4 = n_std * (2/5);
+                const c_kmno4 = n_kmno4 / (vConsumed / 1000);
+
+                cArr.push(c_kmno4);
+
+                results.push({
+                    m1, m2, mStd,
+                    vStart, vEnd, vConsumed,
+                    c: c_kmno4
+                });
+                rawInputs.data.push({ m1, m2, vStart, vEnd });
+            }
+
+            if (validCount === 0) return showToast("请至少输入一组完整的有效数据", true);
+
+            const avgC = calcMean(cArr);
+            const rad = calcRAD(cArr);
+
+            const stats = { avgC, rad };
+            
+            renderTable(results, stats);
+            updateStatsView(stats);
+            document.getElementById('result-section').classList.remove('hidden');
+
+            const currentHash = JSON.stringify(rawInputs);
+            if (currentHash === lastSubmissionHash) {
+                showToast("计算结果已更新");
+            } else {
+                const record = {
+                    date: new Date().toISOString(),
+                    results, stats
+                };
+                historyData.unshift(record);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+                renderHistory();
+                lastSubmissionHash = currentHash;
+                showToast("计算完成！");
+            }
+        }
+        
+        function updateStatsView(stats) {
+            document.getElementById('final-avg-c').textContent = stats.avgC.toFixed(5) + " mol/L";
+            document.getElementById('final-rad').textContent = stats.rad.toFixed(2) + " %";
+            
+            const radElem = document.getElementById('final-rad');
+            if (stats.rad > 0.2) radElem.className = "font-bold text-orange-500 tabular-nums text-lg";
+            else radElem.className = "font-bold text-green-600 tabular-nums text-lg";
+        }
+
+        function generateTableHtml(results, stats) {
+            const getVal = (idx, key, fixed) => {
+                if (!results[idx] || results[idx].error) return '-';
+                return results[idx][key].toFixed(fixed);
+            };
+
+            const rows = [
+                { label: `Na₂C₂O₄ m₁ (g)`, key: 'm1', fix: 4 },
+                { label: `Na₂C₂O₄ m₂ (g)`, key: 'm2', fix: 4 },
+                { label: `Na₂C₂O₄ 质量 m (g)`, key: 'mStd', fix: 4, bold: true },
+                { label: `V<sub>初</sub> (mL)`, key: 'vStart', fix: 2 },
+                { label: `V<sub>终</sub> (mL)`, key: 'vEnd', fix: 2 },
+                { label: `消耗体积 V (mL)`, key: 'vConsumed', fix: 2, bold: true },
+                { label: `c<sub>KMnO₄</sub> (mol/L)`, key: 'c', fix: 5, color: true },
+            ];
+
+            let html = `<table class="result-table bg-surface w-full"><thead><tr><th style="width: 30%">测定次数</th><th style="width: 23%">1</th><th style="width: 23%">2</th><th style="width: 23%">3</th></tr></thead><tbody>`;
+            
+            rows.forEach(row => {
+                html += `<tr><td class="text-left font-medium">${row.label}</td>`;
+                for(let i=0; i<3; i++) {
+                    let text = getVal(i, row.key, row.fix);
+                    
+                    let style = 'tabular-nums';
+                    if (row.bold) style += ' font-bold text-primary';
+                    if (row.color) style += ' font-bold text-[var(--accent-color)]';
+                    
+                    html += `<td class="${style}">${text}</td>`;
+                }
+                html += `</tr>`;
+            });
+
+            if (stats) {
+                html += `<tr class="bg-[var(--accent-bg)]/20"><td class="text-left font-bold text-primary">平均浓度 c (mol/L)</td><td colspan="3" class="font-bold tabular-nums text-[var(--accent-color)]">${stats.avgC.toFixed(5)}</td></tr>`;
+                html += `<tr><td class="text-left font-bold text-primary">相对平均偏差 (RAD)</td><td colspan="3" class="tabular-nums">${stats.rad.toFixed(2)} %</td></tr>`;
+            }
+
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function renderTable(results, stats) {
+            const tableHtml = generateTableHtml(results, stats);
+            document.getElementById('result-table-body').innerHTML = tableHtml.match(/<tbody>(.*)<\/tbody>/s)[1];
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                container.innerHTML = '<p class="text-center text-sm text-secondary">暂无历史记录</p>';
+                return;
+            }
+
+            historyData.forEach((rec, idx) => {
+                const date = new Date(rec.date).toLocaleString('zh-CN');
+                const tableHtml = generateTableHtml(rec.results, rec.stats);
+                
+                const html = `
+                <div class="bg-surface border border-[var(--border-light)] rounded-lg shadow-sm text-sm overflow-hidden transition-all duration-300">
+                    <div class="history-summary-row p-4 flex justify-between items-center" onclick="toggleHistory(${idx})">
+                        <div class="flex-1">
+                            <div class="font-bold text-[var(--accent-color)] mb-1">${date}</div>
+                            <div class="text-xs text-secondary flex gap-4">
+                                <span>Avg c: <b class="tabular-nums">${rec.stats.avgC.toFixed(5)}</b></span>
+                                <span>RAD: <b class="tabular-nums">${rec.stats.rad.toFixed(2)}%</b></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="event.stopPropagation(); deleteHistory(${idx})" class="text-[var(--color-error)] text-xs hover:underline">删除</button>
+                            <svg id="arrow-${idx}" class="w-5 h-5 text-secondary expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    <div id="detail-${idx}" class="history-details bg-[var(--bg-canvas)] px-2 sm:px-4">
+                        <div class="py-4 overflow-x-auto">
+                           ${tableHtml}
+                        </div>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        
+        function toggleHistory(idx) {
+            const detail = document.getElementById(`detail-${idx}`);
+            const arrow = document.getElementById(`arrow-${idx}`);
+            if (detail.classList.contains('open')) {
+                detail.classList.remove('open');
+                arrow.classList.remove('open');
+            } else {
+                detail.classList.add('open');
+                arrow.classList.add('open');
+            }
+        }
+        
+        function deleteHistory(index) {
+            historyData.splice(index, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if(confirm('确定清空所有记录吗？')) {
+                historyData = [];
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        }
+        
+        function exportCSV() {
+            if (historyData.length === 0) return showToast("无数据可导出", true);
+            
+            let csv = "时间,测定次数,m_Na2C2O4(g),V_start(mL),V_end(mL),V_consumed(mL),c_KMnO4(mol/L),Avg_c(mol/L),RAD(%)\n";
+            
+            historyData.forEach(rec => {
+                const time = new Date(rec.date).toLocaleString().replace(',', ' ');
+                const avg = rec.stats.avgC.toFixed(5);
+                const rad = rec.stats.rad.toFixed(2);
+
+                rec.results.forEach((r, i) => {
+                    if(!r || r.error) return;
+                    csv += `${time},${i+1},${r.mStd.toFixed(4)},${r.vStart},${r.vEnd},${r.vConsumed.toFixed(2)},${r.c.toFixed(5)},${avg},${rad}\n`;
+                });
+            });
+            
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `高锰酸钾标定数据_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function togglePrinciple() {
+            const content = document.getElementById('principle-content');
+            const arrow = document.getElementById('principle-arrow');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            toast.querySelector('span').innerText = msg;
+            const icon = toast.querySelector('svg');
+            
+            if (isError) {
+                icon.classList.remove('text-green-400');
+                icon.classList.add('text-red-400');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+            } else {
+                icon.classList.remove('text-red-400');
+                icon.classList.add('text-green-400'); 
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function copyText(el) {
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => showToast("已复制到剪贴板"));
+        }
+
+        const colorPalettes = {
+            'purple': { 
+                light: { '--accent-color': '#7c3aed', '--accent-color-dark': '#6d28d9', '--accent-bg': '#f3e8ff' }, 
+                dark: { '--accent-color': '#a78bfa', '--accent-color-dark': '#8b5cf6', '--accent-bg': '#2e1065' } 
+            },
+            'blue': { 
+                light: { '--accent-color': '#0284c7', '--accent-color-dark': '#0369a1', '--accent-bg': '#e0f2fe' }, 
+                dark: { '--accent-color': '#38bdf8', '--accent-color-dark': '#0ea5e9', '--accent-bg': '#082f49' } 
+            },
+            'rose': { 
+                light: { '--accent-color': '#e11d48', '--accent-color-dark': '#be123c', '--accent-bg': '#ffe4e6' }, 
+                dark: { '--accent-color': '#fb7185', '--accent-color-dark': '#f43f5e', '--accent-bg': '#4c0519' } 
+            },
+            'slate': { 
+                light: { '--accent-color': '#475569', '--accent-color-dark': '#334155', '--accent-bg': '#f1f5f9' }, 
+                dark: { '--accent-color': '#94a3b8', '--accent-color-dark': '#64748b', '--accent-bg': '#0f172a' } 
+            }
+        };
+        let currentAccent = 'purple';
+        let currentMode = 'light';
+        let isAnim = true;
+
+        function setAccent(name) {
+            currentAccent = name;
+            applyTheme();
+            document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`button[onclick="setAccent('${name}')"]`).classList.add('active');
+        }
+        
+        function toggleMode() {
+            currentMode = currentMode === 'light' ? 'dark' : 'light';
+            document.getElementById('mode-text').innerText = currentMode === 'light' ? '浅色' : '深色';
+            document.body.setAttribute('data-mode', currentMode);
+            applyTheme();
+        }
+        
+        function applyTheme() {
+            const p = colorPalettes[currentAccent][currentMode];
+            const root = document.documentElement;
+            root.style.setProperty('--accent-color', p['--accent-color']);
+            root.style.setProperty('--accent-color-dark', p['--accent-color-dark']);
+            root.style.setProperty('--accent-bg', p['--accent-bg']);
+            const hex = p['--accent-color'].replace('#', '');
+            const r = parseInt(hex.substring(0,2), 16);
+            const g = parseInt(hex.substring(2,4), 16);
+            const b = parseInt(hex.substring(4,6), 16);
+            root.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
+        }
+
+        function toggleAnimation() {
+            isAnim = !isAnim;
+            document.getElementById('animation-text').innerText = isAnim ? '动效开' : '动效关';
+            document.documentElement.style.setProperty('--animation-state', isAnim ? 'running' : 'paused');
+            document.getElementById('floating-container').style.opacity = isAnim ? '1' : '0';
+        }
+
+        function createFloatingElements() { 
+            const container = document.getElementById('floating-container');
+            container.innerHTML = ''; 
+            const symbols = ['KMnO₄', 'MnO₄⁻', 'Mn²⁺', 'C₂O₄²⁻', 'CO₂', 'H⁺', '紫色', '无色', '浅粉', '75℃']; 
+            for (let i = 0; i < 35; i++) {
+                const el = document.createElement('div');
+                el.classList.add('floating-element');
+                el.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                el.style.setProperty('--random-x', Math.random() * 100 + 'vw');
+                el.style.fontSize = (Math.random() * 1.5 + 0.8) + 'rem';
+                el.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                el.style.animationDelay = (Math.random() * -20) + 's';
+                container.appendChild(el);
+            }
+        }
+
+        window.onload = function() {
+            initTrials();
+            setupPrepListener();
+            renderHistory();
+            createFloatingElements();
+            applyTheme(); 
+        }
+
+    </script>
+</body>
+</html>

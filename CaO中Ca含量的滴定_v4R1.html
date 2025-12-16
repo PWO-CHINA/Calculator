@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>氧化钙中钙含量的测定 (高锰酸钾滴定法)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 基础样式设置 */
+        :root {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            /* 默认紫色调，呼应高锰酸钾 */
+            --bg-canvas: #faf5ff; 
+            --bg-surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-color: #7c3aed; /* 高锰酸钾紫 */
+            --accent-color-dark: #6d28d9;
+            --accent-bg: #f3e8ff;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --border-light: #e9d5ff;
+            --button-text: #ffffff;
+            --accent-color-rgb: 124, 58, 237;
+            --animation-state: running;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.1) 0%, 
+                var(--bg-canvas) 60%
+            );
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 1.5rem 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .main-calculator-card {
+            position: relative;
+            z-index: 20;
+            width: 90%;
+            max-width: 900px; /* 稍微加宽以容纳3个卡片 */
+            margin: 0;
+            margin-bottom: 4rem; 
+        }
+
+        /* --- 动画背景 --- */
+        #floating-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none; 
+            z-index: 1;
+        }
+        
+        .floating-element {
+            position: absolute;
+            top: 0;
+            left: var(--random-x);
+            color: var(--accent-color);
+            opacity: 0.12;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            animation: waterfall linear infinite;
+            animation-play-state: var(--animation-state);
+            user-select: none;
+            font-family: 'Times New Roman', serif;
+            will-change: transform;
+            transform: translate3d(0, -100vh, 0); 
+        }
+
+        @keyframes waterfall {
+            0% { transform: translate3d(0, -100vh, 0); }
+            100% { transform: translate3d(0, 150vh, 0); }
+        }
+        
+        /* --- 深色模式 --- */
+        body[data-mode="dark"] {
+            --bg-canvas: #0f172a;           
+            --bg-surface: #1e293b;          
+            --text-primary: #f8fafc;        
+            --text-secondary: #94a3b8;      
+            --color-error: #f87171;         
+            --border-light: #334155;        
+            --button-text: #0f172a;         
+             background-image: radial-gradient(
+                circle at 50% 10%, 
+                rgba(var(--accent-color-rgb), 0.2) 0%, 
+                var(--bg-canvas) 50%
+            );
+        }
+
+        /* 通用类 */
+        .bg-surface { background-color: var(--bg-surface); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-light { border-color: var(--border-light); }
+        .accent-bg { background-color: var(--accent-bg); }
+        
+        /* 输入框样式 */
+        .input-field {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+            background-color: var(--bg-surface);
+            transition: border-color 0.3s, background-color 0.5s;
+        }
+        .input-field:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.3);
+            outline: none;
+        }
+        .input-disabled {
+            background-color: rgba(0,0,0,0.05);
+            cursor: not-allowed;
+        }
+
+        .theme-button { 
+            position: relative; 
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .theme-button:hover {
+            transform: scale(1.1);
+        }
+        .theme-button.active {
+            transform: scale(1.15);
+            box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
+        }
+
+        /* 表格样式 */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .result-table th, .result-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+        .result-table th {
+            background-color: var(--accent-bg); 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .result-table tr:hover td {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+        /* 子标题行样式 */
+        .table-subheader {
+            background-color: rgba(var(--accent-color-rgb), 0.1);
+            font-weight: bold;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-align: left;
+            padding-left: 1rem;
+        }
+
+        /* 按钮动效 */
+        .calculate-button {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color-dark) 100%);
+            color: var(--button-text); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            font-weight: 700;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .calculate-button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+            pointer-events: none;
+        }
+        .calculate-button:hover {
+            filter: brightness(1.1); 
+            box-shadow: 0 8px 20px -4px rgba(var(--accent-color-rgb), 0.5); 
+            transform: translateY(-2px); 
+        }
+        .calculate-button:active {
+            filter: brightness(0.95); 
+            transform: scale(0.98); 
+            box-shadow: 0 4px 10px -2px rgba(var(--accent-color-rgb), 0.3);
+        }
+        .active-scale-98:active { transform: scale(0.98); }
+
+        .main-title { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1.2; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+
+        /* Toast 提示样式 */
+        #toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .copyable-result { cursor: pointer; border-bottom: 1px dashed var(--accent-color); }
+        .copyable-result:active { opacity: 0.7; }
+
+        /* 针对小屏幕优化表格 */
+        @media (max-width: 640px) {
+            .result-table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .dot-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: var(--border-light);
+            transition: all 0.3s ease;
+        }
+        .dot-indicator.active {
+            background-color: var(--accent-color);
+            transform: scale(1.2); width: 20px; border-radius: 4px;
+        }
+
+        @keyframes swipe-hint {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(10px); opacity: 1; }
+        }
+        .swipe-hint-icon { animation: swipe-hint 1.5s infinite; }
+
+        /* 历史记录展开样式 */
+        .history-details {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out; opacity: 0;
+        }
+        .history-details.open { max-height: 1000px; opacity: 1; margin-top: 1rem; }
+        .history-summary-row { cursor: pointer; transition: background-color 0.2s; }
+        .history-summary-row:hover { background-color: rgba(var(--accent-color-rgb), 0.05); }
+        .expand-icon { transition: transform 0.3s; }
+        .expand-icon.open { transform: rotate(180deg); }
+        
+        .reaction-card {
+            background-color: var(--bg-canvas);
+            border-left: 4px solid var(--accent-color);
+        }
+        .formula { font-family: 'Times New Roman', serif; }
+
+        /* 试剂卡片特殊样式 */
+        .trial-card.blank-card {
+            border-top: 4px solid #94a3b8; /* 灰色区分空白实验 */
+        }
+        .trial-card.sample-card {
+            border-top: 4px solid var(--accent-color);
+        }
+        
+        /* 隐藏元素的类 */
+        .hidden-card {
+            display: none !important;
+        }
+    </style>
+</head>
+<body data-mode="light">
+    
+    <div id="floating-container"></div>
+    
+    <!-- Toast Notification -->
+    <div id="toast-notification">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>内容已复制</span>
+    </div>
+
+    <div class="main-calculator-card bg-surface shadow-2xl rounded-2xl p-6 sm:p-8 space-y-6 border-t-8 border-[var(--accent-color)] transition-colors duration-500">
+
+        <!-- 顶部控制区 -->
+        <div class="flex flex-col space-y-4 pb-4 border-b border-[var(--border-light)] transition-colors duration-500">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-wrap items-center space-x-3">
+                    <span class="text-sm font-medium text-[var(--text-secondary)]">界面模式:</span>
+                    <button onclick="toggleMode()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="mode-text">浅色</span>
+                    </button>
+                    <button onclick="toggleAnimation()" class="px-3 py-1 bg-[var(--accent-bg)] rounded-full text-[var(--text-primary)] border border-[var(--border-light)] text-xs font-bold active-scale-98">
+                        <span id="animation-text">动效开</span>
+                    </button>
+                </div>
+                <!-- 主题色选择 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="setAccent('purple')" class="theme-button w-6 h-6 rounded-full active" style="background: #7c3aed;" title="高锰酸钾紫"></button>
+                    <button onclick="setAccent('blue')" class="theme-button w-6 h-6 rounded-full" style="background: #0284c7;" title="钙试剂蓝"></button>
+                    <button onclick="setAccent('emerald')" class="theme-button w-6 h-6 rounded-full" style="background: #059669;" title="草酸绿"></button>
+                    <button onclick="setAccent('pink')" class="theme-button w-6 h-6 rounded-full" style="background: #db2777;" title="终点粉"></button>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-2">
+                <h1 class="main-title text-primary">氧化钙中钙含量的测定<br><span class="text-lg opacity-80 font-normal">(高锰酸钾氧化还原滴定法)</span></h1>
+            </div>
+
+            <!-- 原理展开折叠 -->
+            <div class="border border-[var(--border-light)] rounded-lg overflow-hidden">
+                <button onclick="togglePrinciple()" class="w-full px-4 py-2 bg-[var(--accent-bg)] text-left flex justify-between items-center text-sm font-bold text-[var(--accent-color)]">
+                    <span>📖 实验原理与反应式 (定容法)</span>
+                    <svg id="principle-arrow" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="principle-content" class="hidden p-4 text-sm text-[var(--text-secondary)] space-y-3 bg-[var(--bg-canvas)]">
+                    <div class="space-y-1">
+                        <p class="font-bold">1. 试样制备 (定容):</p>
+                        <p class="text-xs text-gray-500">称取质量 m 的试样，溶解并定容至 V<sub>总</sub> (如250mL)。每次移取 V<sub>移</sub> (如25mL) 进行滴定。</p>
+                        <p class="formula pl-4 text-xs font-bold text-[var(--accent-color)]">稀释倍数 f = V<sub>总</sub> / V<sub>移</sub></p>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="font-bold">2. 沉淀与溶解:</p>
+                        <p class="formula pl-4">Ca²⁺ + C₂O₄²⁻ ⇌ CaC₂O₄↓</p>
+                        <p class="formula pl-4">CaC₂O₄ + H₂SO₄ ⇌ CaSO₄ + H₂C₂O₄</p>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="font-bold">3. 滴定与计算:</p>
+                        <p class="formula pl-4">5n(Ca²⁺) = 2n(MnO₄⁻)</p>
+                        <p class="formula pl-4 text-xs">n(Ca)<sub>总量</sub> = 2.5 × n(KMnO₄) × f</p>
+                        <p class="formula pl-4 text-xs">注意: c(KMnO₄) 需保留4位有效数字 (即小数点后5位, 如0.02000)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 全局参数设置 -->
+        <div class="bg-[var(--accent-bg)] p-4 rounded-lg border border-[var(--border-light)] transition-colors duration-500">
+            <h2 class="section-title">🧪 实验公共参数</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">c(KMnO₄) (mol/L)</label>
+                    <input type="number" id="c-std" min="0" oninput="if(value<0)value=0" placeholder="0.02000" class="w-full rounded-lg p-2 border input-field tabular-nums" onchange="formatInputSigFigs(this, 5)">
+                    <span class="text-[10px] text-gray-400">需保留5位小数以满足4位有效数字</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">M(Ca) (g/mol)</label>
+                    <input type="number" id="m-molar" value="40.08" class="w-full rounded-lg p-2 border input-field tabular-nums opacity-90" onchange="formatInputSigFigs(this, 2)">
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-primary mb-1">定容体积 V<sub>总</sub> (mL)</label>
+                    <input type="number" id="v-total-vol" value="250.00" class="w-full rounded-lg p-2 border input-field tabular-nums" onchange="formatInputSigFigs(this, 2)">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-primary mb-1">移取体积 V<sub>移</sub> (mL)</label>
+                    <input type="number" id="v-aliquot" value="25.00" class="w-full rounded-lg p-2 border input-field tabular-nums" onchange="formatInputSigFigs(this, 2)">
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据输入区 -->
+        <div class="space-y-4">
+            
+            <!-- 步骤1: 试样称量 (独立卡片) -->
+            <div class="p-4 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative">
+                <div class="flex justify-between items-center mb-3">
+                     <h2 class="section-title flex items-center gap-2 mb-0">
+                        ⚖️ 步骤 1: 试样配制与称量
+                    </h2>
+                     <span class="text-xs text-[var(--text-secondary)]">称取试样溶解并定容</span>
+                </div>
+               
+                <div class="bg-[var(--bg-canvas)] p-3 rounded border border-[var(--border-light)]">
+                    <p class="text-xs font-bold text-[var(--accent-color)] mb-2">氧化钙试样总质量 (定容前)</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-[10px] text-secondary">称量瓶+样 m₁ (g)</label>
+                            <input type="number" id="m1-total" oninput="liveCalcTotalMass()" step="0.0001" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="1.5000">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-secondary">称量瓶/余样 m₂ (g)</label>
+                            <input type="number" id="m2-total" oninput="liveCalcTotalMass()" step="0.0001" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.0000">
+                        </div>
+                        <div class="flex flex-col justify-end">
+                             <div class="flex justify-between text-sm border-t-2 border-[var(--accent-color)] pt-2">
+                                <span class="text-secondary font-bold">试样总重 m:</span>
+                                <span id="disp-m-total" class="font-bold text-[var(--accent-color)] tabular-nums">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤2: 滴定数据 -->
+            <div class="flex flex-col gap-2 pt-2">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end">
+                    <h2 class="section-title flex items-center gap-2 mb-0">
+                        💧 步骤 2: 移取滴定数据录入
+                        <span class="text-xs font-normal bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">空白 + 平行样</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--accent-color)] lg:hidden swipe-hint-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                    </h2>
+                    <!-- 第二组开关 -->
+                    <div class="flex items-center space-x-2 bg-surface p-2 rounded-lg border border-[var(--border-light)] mt-2 sm:mt-0 shadow-sm">
+                        <input type="checkbox" id="use-group-2" class="w-4 h-4 text-[var(--accent-color)] rounded border-gray-300 focus:ring-[var(--accent-color)]" onchange="toggleGroup2()">
+                        <label for="use-group-2" class="text-sm font-bold text-primary cursor-pointer select-none">启用第 2 组平行实验</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="trials-container" class="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory hide-scrollbar pb-2">
+                <!-- 卡片1: 空白实验 -->
+                <div class="w-full flex-shrink-0 snap-center lg:w-auto p-4 rounded-lg border bg-surface shadow-sm relative trial-card blank-card transition-all duration-300">
+                    <div class="absolute top-2 right-2 text-xs font-bold text-gray-300 text-4xl select-none">B</div>
+                    <h3 class="font-bold text-gray-600 mb-3 text-sm flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                        空白对照实验
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="bg-gray-50 p-2 rounded border border-gray-200 opacity-60">
+                            <div class="text-xs text-gray-400 italic text-center py-2">
+                                不加试样溶液<br>按同样步骤滴定
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">空白 V<sub>初</sub> (mL)</label>
+                            <input type="number" id="v-start-0" min="0" oninput="liveCalcVol(0)" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">空白 V<sub>终</sub> (mL)</label>
+                            <input type="number" id="v-end-0" min="0" oninput="liveCalcVol(0)" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.05">
+                        </div>
+                        
+                        <div class="pt-2 border-t border-dashed border-[var(--border-light)] text-xs flex justify-between items-center">
+                             <span class="text-secondary font-bold">空白消耗 V₀ (mL):</span> 
+                             <span id="disp-v-0" class="tabular-nums font-bold text-gray-600 text-sm">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片2: 平行样1 -->
+                <div class="w-full flex-shrink-0 snap-center lg:w-auto p-4 rounded-lg border bg-surface shadow-sm relative trial-card sample-card transition-all duration-300">
+                    <div class="absolute top-2 right-2 text-xs font-bold text-[var(--accent-color)] opacity-20 text-4xl select-none">1</div>
+                    <h3 class="font-bold text-primary mb-3 text-sm flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-[var(--accent-color)] mr-2"></span>
+                        第 1 组平行实验
+                    </h3>
+                    <div class="text-xs text-[var(--text-secondary)] mb-3 bg-[var(--accent-bg)] p-1 rounded inline-block">
+                        移取 V<sub>移</sub> 溶液进行滴定
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">滴定管初读数 V<sub>初</sub> (mL)</label>
+                            <input type="number" id="v-start-1" min="0" oninput="liveCalcVol(1)" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">滴定管终读数 V<sub>终</sub> (mL)</label>
+                            <input type="number" id="v-end-1" min="0" oninput="liveCalcVol(1)" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="20.00">
+                        </div>
+                        
+                        <div class="pt-2 border-t border-dashed border-[var(--border-light)] text-xs flex justify-between items-center">
+                             <span class="text-secondary">总消耗 V₁ (mL):</span> 
+                             <span id="disp-v-1" class="tabular-nums font-bold text-[var(--accent-color)] text-sm">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片3: 平行样2 (默认隐藏) -->
+                <div id="trial-card-2" class="hidden-card w-full flex-shrink-0 snap-center lg:w-auto p-4 rounded-lg border bg-surface shadow-sm relative trial-card sample-card transition-all duration-300">
+                    <div class="absolute top-2 right-2 text-xs font-bold text-[var(--accent-color)] opacity-20 text-4xl select-none">2</div>
+                    <h3 class="font-bold text-primary mb-3 text-sm flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-[var(--accent-color)] mr-2"></span>
+                        第 2 组平行实验
+                    </h3>
+                    <div class="text-xs text-[var(--text-secondary)] mb-3 bg-[var(--accent-bg)] p-1 rounded inline-block">
+                        移取 V<sub>移</sub> 溶液进行滴定
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">滴定管初读数 V<sub>初</sub> (mL)</label>
+                            <input type="number" id="v-start-2" min="0" oninput="liveCalcVol(2)" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-secondary mb-1">滴定管终读数 V<sub>终</sub> (mL)</label>
+                            <input type="number" id="v-end-2" min="0" oninput="liveCalcVol(2)" step="0.01" class="w-full rounded p-2 border input-field text-sm tabular-nums" placeholder="20.00">
+                        </div>
+                        
+                        <div class="pt-2 border-t border-dashed border-[var(--border-light)] text-xs flex justify-between items-center">
+                             <span class="text-secondary">总消耗 V₂ (mL):</span> 
+                             <span id="disp-v-2" class="tabular-nums font-bold text-[var(--accent-color)] text-sm">-</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div id="trial-indicators" class="flex justify-center space-x-2 lg:hidden">
+                <div class="dot-indicator active" data-index="0"></div>
+                <div class="dot-indicator" data-index="1"></div>
+                <div class="dot-indicator hidden" id="dot-indicator-2" data-index="2"></div>
+            </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="calculateResults()" class="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-lg calculate-button mt-4">
+            计算钙含量 & 统计结果
+        </button>
+
+        <!-- 结果展示区 -->
+        <div id="result-section" class="hidden space-y-6">
+            
+            <!-- 统计结果卡片 -->
+            <div class="grid grid-cols-1 gap-4">
+                <div class="p-5 rounded-lg border border-[var(--border-light)] bg-surface shadow-sm relative overflow-hidden" id="card-cu">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 text-6xl font-serif font-bold text-[var(--accent-color)]">Ca</div>
+                    <h3 class="font-bold text-[var(--accent-color)] mb-4 border-b pb-2">计算结果汇总 (Calcium)</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-secondary">平均质量分数 w(Ca):</span>
+                            <span class="font-bold text-[var(--accent-color)] text-2xl tabular-nums copyable-result" onclick="copyText(this)" id="final-avg-percent">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-secondary">相对平均偏差 (RAD):</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-primary tabular-nums text-lg" id="final-rad">-</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-dashed pt-2 col-span-1 sm:col-span-2">
+                             <span class="text-xs text-secondary">稀释倍数 f (V<sub>总</sub>/V<sub>移</sub>):</span>
+                             <span class="text-sm font-medium tabular-nums" id="final-dilution-factor">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 表格 -->
+            <div class="border-t-2 border-[var(--accent-color)] pt-6 mt-6">
+                <h2 class="section-title text-center mb-4">📝 数据记录与处理表</h2>
+                <div class="overflow-x-auto rounded-lg shadow-sm border border-[var(--border-light)]">
+                    <table class="result-table bg-surface">
+                        <thead id="result-table-head">
+                            <!-- JS 填充 -->
+                        </thead>
+                        <tbody id="result-table-body">
+                            <!-- JS 填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- 历史记录控制 -->
+        <div class="pt-6 border-t border-[var(--border-light)]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title mb-0">💾 历史记录</h2>
+                <div class="space-x-2">
+                     <button onclick="exportCSV()" class="px-3 py-1.5 bg-[#10b981] text-white rounded text-sm font-medium hover:bg-[#059669] transition active-scale-98">
+                        导出 CSV
+                    </button>
+                    <button onclick="clearHistory()" class="px-3 py-1.5 bg-[var(--color-error)] text-white rounded text-sm font-medium hover:opacity-90 transition active-scale-98">
+                        清空
+                    </button>
+                </div>
+            </div>
+            <div id="history-container" class="space-y-3">
+                <!-- 历史卡片 -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 核心逻辑 ---
+        
+        // 更换Key以强制使用新数据结构
+        const HISTORY_KEY = 'caTitrationHistory_v5_full_record';
+        let historyData = [];
+        try {
+            const raw = localStorage.getItem(HISTORY_KEY);
+            historyData = raw ? JSON.parse(raw) : [];
+        } catch(e) {
+            console.error("历史记录解析失败", e);
+            historyData = [];
+        }
+        
+        let lastSubmissionHash = "";
+
+        // 默认配置
+        const DEFAULT_MOLAR_MASS = 40.08;
+
+        function formatInputSigFigs(input, sigFigs) {
+            const val = parseFloat(input.value);
+            if (!isNaN(val) && val !== 0) {
+                input.value = val.toFixed(sigFigs);
+            }
+        }
+        
+        function toggleGroup2() {
+            const checkbox = document.getElementById('use-group-2');
+            const card2 = document.getElementById('trial-card-2');
+            const dot2 = document.getElementById('dot-indicator-2');
+            
+            if (checkbox.checked) {
+                card2.classList.remove('hidden-card');
+                dot2.classList.remove('hidden');
+                // 自动对齐滚动
+                setTimeout(() => {
+                    card2.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }, 100);
+            } else {
+                card2.classList.add('hidden-card');
+                dot2.classList.add('hidden');
+            }
+        }
+
+        // 初始化滚动监听
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('trials-container');
+            if(container) {
+                const cards = container.querySelectorAll('.trial-card');
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const index = Array.from(cards).indexOf(entry.target);
+                            updateDots(index);
+                        }
+                    });
+                }, { root: container, threshold: 0.6 });
+                cards.forEach(card => observer.observe(card));
+            }
+        });
+
+        function updateDots(activeIndex) {
+            const dots = document.querySelectorAll('.dot-indicator');
+            dots.forEach((dot, idx) => {
+                if (idx === activeIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function liveCalcTotalMass() {
+            const m1El = document.getElementById(`m1-total`);
+            const m2El = document.getElementById(`m2-total`);
+            if(!m1El || !m2El) return;
+
+            const m1 = parseFloat(m1El.value);
+            const m2 = parseFloat(m2El.value);
+            const disp = document.getElementById(`disp-m-total`);
+            if (!isNaN(m1) && !isNaN(m2)) {
+                const diff = m1 - m2;
+                disp.textContent = diff.toFixed(4) + " g";
+                if (diff <= 0) disp.classList.add('text-red-500');
+                else disp.classList.remove('text-red-500');
+            } else {
+                disp.textContent = "-";
+            }
+        }
+
+        function liveCalcVol(i) {
+            const v1El = document.getElementById(`v-start-${i}`);
+            const v2El = document.getElementById(`v-end-${i}`);
+            if(!v1El || !v2El) return;
+
+            const v1 = parseFloat(v1El.value);
+            const v2 = parseFloat(v2El.value);
+            const disp = document.getElementById(`disp-v-${i}`);
+            if (!isNaN(v1) && !isNaN(v2)) {
+                const diff = v2 - v1;
+                disp.textContent = diff.toFixed(2);
+                if (diff <= 0) disp.classList.add('text-red-500');
+                else disp.classList.remove('text-red-500');
+            } else {
+                disp.textContent = "-";
+            }
+        }
+
+        function calcRAD(arr) {
+            if (arr.length < 2) return null; // 只有1个数据时无法计算
+            const mean = arr.reduce((a, b) => a + b) / arr.length;
+            if (mean === 0) return 0;
+            const sumAbsDiff = arr.reduce((sum, val) => sum + Math.abs(val - mean), 0);
+            const meanDev = sumAbsDiff / arr.length;
+            return (meanDev / mean) * 100;
+        }
+        
+        function calcMean(arr) {
+            return arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+        }
+
+        function getSafeValue(id) {
+            const el = document.getElementById(id);
+            if (!el) {
+                console.error(`Missing element with ID: ${id}`);
+                return NaN;
+            }
+            return parseFloat(el.value);
+        }
+
+        function calculateResults() {
+            console.log("Starting calculation...");
+            try {
+                const cStd = getSafeValue('c-std');
+                const mMolar = getSafeValue('m-molar');
+                const vTotalVol = getSafeValue('v-total-vol');
+                const vAliquot = getSafeValue('v-aliquot');
+                const m1Total = getSafeValue('m1-total');
+                const m2Total = getSafeValue('m2-total');
+                const useGroup2 = document.getElementById('use-group-2') ? document.getElementById('use-group-2').checked : false;
+                
+                // 验证公共参数
+                if (isNaN(cStd) || cStd <= 0) return showToast("请输入有效的 KMnO₄ 浓度", true);
+                if (isNaN(mMolar) || mMolar <= 0) return showToast("请输入有效的摩尔质量", true);
+                if (isNaN(vTotalVol) || vTotalVol <= 0) return showToast("请输入有效的定容体积", true);
+                if (isNaN(vAliquot) || vAliquot <= 0) return showToast("请输入有效的移取体积", true);
+                
+                // 验证试样质量
+                const mSampleTotal = m1Total - m2Total;
+                if (isNaN(mSampleTotal) || mSampleTotal <= 0) return showToast("请输入有效的试样总质量", true);
+                
+                // 计算稀释倍数
+                const dilutionFactor = vTotalVol / vAliquot;
+
+                // 1. 获取空白实验数据
+                const vBlankStart = getSafeValue('v-start-0');
+                const vBlankEnd = getSafeValue('v-end-0');
+                let vBlank = 0;
+                if (isNaN(vBlankStart) || isNaN(vBlankEnd)) {
+                    if(!confirm("检测到空白实验数据不完整，是否假设空白消耗为 0 mL 继续计算？")) return;
+                    vBlank = 0;
+                } else {
+                    vBlank = vBlankEnd - vBlankStart;
+                }
+
+                let results = [];
+                let percentArr = [];
+                let validCount = 0;
+                let rawInputs = { c: cStd, m: mMolar, m1Total, m2Total, vTotalVol, vAliquot, vBlankStart, vBlankEnd, useGroup2, data: [] };
+
+                const iterations = useGroup2 ? 2 : 1;
+
+                // 2. 循环处理
+                for (let i = 1; i <= iterations; i++) {
+                    const vStart = getSafeValue(`v-start-${i}`);
+                    const vEnd = getSafeValue(`v-end-${i}`);
+                    
+                    if (isNaN(vStart) || isNaN(vEnd)) {
+                        results.push(null); // 数据不全
+                        continue;
+                    }
+
+                    const vTotal = vEnd - vStart;
+                    const vNet = vTotal - vBlank; // 扣除空白
+
+                    validCount++;
+                    
+                    const n_KMnO4 = cStd * (vNet / 1000);
+                    const n_Ca_aliquot = 2.5 * n_KMnO4;
+                    const n_Ca_total = n_Ca_aliquot * dilutionFactor;
+                    const m_Ca_total = n_Ca_total * mMolar;
+                    const percent = (m_Ca_total / mSampleTotal) * 100;
+
+                    if (percent < 0) {
+                         results.push({ error: "结果为负 (空白值过大?)" });
+                         continue;
+                    }
+
+                    percentArr.push(percent);
+
+                    results.push({
+                        id: i,
+                        vStart, vEnd, vTotal, vNet,
+                        percent
+                    });
+                    rawInputs.data.push({ vStart, vEnd });
+                }
+
+                if (validCount === 0) return showToast("请至少输入一组完整的有效滴定数据", true);
+
+                const avgPercent = calcMean(percentArr);
+                const rad = calcRAD(percentArr);
+
+                // 将所有原始数据打包进 stats
+                const stats = { 
+                    avgPercent, rad, 
+                    vBlank, vBlankStart, vBlankEnd,
+                    dilutionFactor, 
+                    mSampleTotal, m1Total, m2Total,
+                    vTotalVol, vAliquot, 
+                    groupCount: iterations 
+                };
+                
+                renderTable(results, cStd, stats);
+                updateStatsView(stats);
+                
+                const resultSection = document.getElementById('result-section');
+                if(resultSection) resultSection.classList.remove('hidden');
+
+                // 历史记录逻辑
+                const currentHash = JSON.stringify(rawInputs);
+                if (currentHash === lastSubmissionHash) {
+                    showToast("计算结果已更新");
+                } else {
+                    const record = {
+                        date: new Date().toISOString(),
+                        cStd, mMolar, results, stats
+                    };
+                    historyData.unshift(record);
+                    try {
+                         localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+                    } catch(e) { console.error("Storage error", e); }
+                    
+                    renderHistory();
+                    lastSubmissionHash = currentHash;
+                    showToast("计算完成！");
+                }
+            } catch(e) {
+                console.error("Calculation Error:", e);
+                alert("计算程序发生错误，详情请查看控制台: " + e.message);
+            }
+        }
+        
+        function updateStatsView(stats) {
+            const avgElem = document.getElementById('final-avg-percent');
+            if(avgElem) avgElem.textContent = stats.avgPercent.toFixed(2) + " %";
+            
+            const radElem = document.getElementById('final-rad');
+            if(radElem) {
+                if (stats.rad === null) {
+                    radElem.textContent = "N/A";
+                    radElem.className = "font-bold text-gray-400 text-lg";
+                } else {
+                    radElem.textContent = stats.rad.toFixed(2) + " %";
+                    if (stats.rad > 0.2) radElem.className = "font-bold text-orange-500 tabular-nums text-lg";
+                    else radElem.className = "font-bold text-green-600 tabular-nums text-lg";
+                }
+            }
+            
+            const fElem = document.getElementById('final-dilution-factor');
+            if(fElem) fElem.textContent = stats.dilutionFactor.toFixed(2);
+            
+            const blankElem = document.getElementById('final-blank-vol');
+            if(blankElem) blankElem.textContent = stats.vBlank.toFixed(2) + " mL";
+        }
+
+        function generateTableHtml(results, cStd, stats) {
+            if (!stats) return '';
+
+            const getVal = (idx, key, fixed) => {
+                if (!results || !results[idx] || results[idx].error) return '-';
+                return Number(results[idx][key]).toFixed(fixed);
+            };
+
+            const count = stats.groupCount || 2; 
+
+            // 动态行：主体数据
+            const rows = [
+                { label: `V<sub>初</sub> (mL)`, key: 'vStart', fix: 2 },
+                { label: `V<sub>终</sub> (mL)`, key: 'vEnd', fix: 2 },
+                { label: `总体积 V (mL)`, key: 'vTotal', fix: 2 },
+                { label: `净体积 (V-V₀) (mL)`, key: 'vNet', fix: 2, bold: true, color: false },
+                { label: `w(Ca) (%)`, key: 'percent', fix: 2, color: true },
+            ];
+            
+            let header = `<thead><tr><th style="width: 30%">项目 \\ 组别</th>`;
+            for(let i=1; i<=count; i++) {
+                header += `<th style="width: ${70/count}%">平行样 ${i}</th>`;
+            }
+            header += `</tr></thead>`;
+
+            let body = `<tbody>`;
+            
+            // 安全类型转换
+            const m1TotalSafe = Number(stats.m1Total || 0).toFixed(4);
+            const m2TotalSafe = Number(stats.m2Total || 0).toFixed(4);
+            const mSampleSafe = Number(stats.mSampleTotal || 0).toFixed(4);
+            
+            const fSafe = Number(stats.dilutionFactor || 0).toFixed(2);
+            const cStdSafe = Number(cStd || 0).toFixed(5);
+            
+            const vBlankStartSafe = Number(stats.vBlankStart || 0).toFixed(2);
+            const vBlankEndSafe = Number(stats.vBlankEnd || 0).toFixed(2);
+            const vBlankSafe = Number(stats.vBlank || 0).toFixed(2);
+
+            // 1. 称量记录块
+            body += `<tr><td colspan="${count+1}" class="table-subheader">I. 试样称量记录</td></tr>`;
+            body += `<tr><td class="text-left font-medium">称量瓶+样 m₁ (g)</td><td colspan="${count}" class="tabular-nums">${m1TotalSafe}</td></tr>`;
+            body += `<tr><td class="text-left font-medium">称量瓶/余样 m₂ (g)</td><td colspan="${count}" class="tabular-nums">${m2TotalSafe}</td></tr>`;
+            body += `<tr><td class="text-left font-medium">试样总质量 m (g)</td><td colspan="${count}" class="tabular-nums font-bold text-primary">${mSampleSafe}</td></tr>`;
+            
+            // 2. 溶液参数块
+            body += `<tr><td colspan="${count+1}" class="table-subheader">II. 溶液配制参数</td></tr>`;
+            body += `<tr><td class="text-left font-medium">稀释倍数 f</td><td colspan="${count}" class="tabular-nums">${fSafe}</td></tr>`;
+            body += `<tr><td class="text-left font-medium">c(KMnO₄) (mol/L)</td><td colspan="${count}" class="tabular-nums">${cStdSafe}</td></tr>`;
+            
+            // 3. 空白对照块
+            body += `<tr><td colspan="${count+1}" class="table-subheader">III. 空白对照记录</td></tr>`;
+            body += `<tr><td class="text-left font-medium">空白 V<sub>初</sub> (mL)</td><td colspan="${count}" class="tabular-nums">${vBlankStartSafe}</td></tr>`;
+            body += `<tr><td class="text-left font-medium">空白 V<sub>终</sub> (mL)</td><td colspan="${count}" class="tabular-nums">${vBlankEndSafe}</td></tr>`;
+            body += `<tr><td class="text-left font-medium">空白消耗 V₀ (mL)</td><td colspan="${count}" class="tabular-nums text-gray-500">${vBlankSafe}</td></tr>`;
+
+            // 4. 平行样测定块
+            body += `<tr><td colspan="${count+1}" class="table-subheader">IV. 平行样测定</td></tr>`;
+            rows.forEach(row => {
+                body += `<tr><td class="text-left font-medium">${row.label}</td>`;
+                for(let i=0; i<count; i++) {
+                    let text = getVal(i, row.key, row.fix);
+                    
+                    let style = 'tabular-nums';
+                    if (row.bold) style += ' font-bold text-primary';
+                    if (row.color) style += ' font-bold text-[var(--accent-color)]';
+                    
+                    body += `<td class="${style}">${text}</td>`;
+                }
+                body += `</tr>`;
+            });
+
+            if (stats) {
+                const avgNum = Number(stats.avgPercent || 0);
+                body += `<tr class="bg-[var(--accent-bg)]/20"><td class="text-left font-bold text-primary">平均含量 w̄ (%)</td><td colspan="${count}" class="font-bold tabular-nums text-[var(--accent-color)] text-lg">${avgNum.toFixed(2)} %</td></tr>`;
+                
+                let radText = stats.rad === null ? "N/A" : Number(stats.rad).toFixed(2) + " %";
+                body += `<tr><td class="text-left font-bold text-primary">相对平均偏差 (RAD)</td><td colspan="${count}" class="tabular-nums">${radText}</td></tr>`;
+            }
+
+            body += `</tbody>`;
+            return `<table class="result-table bg-surface w-full">${header}${body}</table>`;
+        }
+
+        function renderTable(results, cStd, stats) {
+            const tableHtml = generateTableHtml(results, cStd, stats);
+            const headElem = document.getElementById('result-table-head');
+            const bodyElem = document.getElementById('result-table-body');
+            
+            if(headElem && bodyElem) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = tableHtml;
+                headElem.innerHTML = tempDiv.querySelector('thead').innerHTML;
+                bodyElem.innerHTML = tempDiv.querySelector('tbody').innerHTML;
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                container.innerHTML = '<p class="text-center text-sm text-secondary">暂无历史记录</p>';
+                return;
+            }
+
+            historyData.forEach((rec, idx) => {
+                const date = new Date(rec.date).toLocaleString('zh-CN');
+                // 健壮性检查：确保 stats 存在，否则跳过
+                if (!rec.stats) return;
+
+                const tableHtml = generateTableHtml(rec.results, rec.cStd, rec.stats);
+                
+                const mSampleSafe = Number(rec.stats.mSampleTotal || 0).toFixed(4);
+                const fSafe = Number(rec.stats.dilutionFactor || 0).toFixed(1);
+                
+                const html = `
+                <div class="bg-surface border border-[var(--border-light)] rounded-lg shadow-sm text-sm overflow-hidden transition-all duration-300">
+                    <div class="history-summary-row p-4 flex justify-between items-center" onclick="toggleHistory(${idx})">
+                        <div class="flex-1">
+                            <div class="font-bold text-[var(--accent-color)] mb-1">${date}</div>
+                            <div class="text-xs text-secondary flex gap-4">
+                                <span>w̄(Ca): <b class="tabular-nums">${Number(rec.stats.avgPercent || 0).toFixed(2)}%</b></span>
+                                <span>m: ${mSampleSafe}g</span>
+                                <span class="hidden sm:inline">f: ${fSafe}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="event.stopPropagation(); deleteHistory(${idx})" class="text-[var(--color-error)] text-xs hover:underline">删除</button>
+                            <svg id="arrow-${idx}" class="w-5 h-5 text-secondary expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    <div id="detail-${idx}" class="history-details bg-[var(--bg-canvas)] px-2 sm:px-4">
+                        <div class="py-4 overflow-x-auto">
+                           ${tableHtml}
+                        </div>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        
+        function toggleHistory(idx) {
+            const detail = document.getElementById(`detail-${idx}`);
+            const arrow = document.getElementById(`arrow-${idx}`);
+            if (detail.classList.contains('open')) {
+                detail.classList.remove('open');
+                arrow.classList.remove('open');
+            } else {
+                detail.classList.add('open');
+                arrow.classList.add('open');
+            }
+        }
+        
+        function deleteHistory(index) {
+            historyData.splice(index, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if(confirm('确定清空所有记录吗？')) {
+                historyData = [];
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        }
+        
+        function exportCSV() {
+            if (historyData.length === 0) return showToast("无数据可导出", true);
+            
+            // 更新 CSV 表头，加入详细称量和空白数据
+            let csv = "时间,组别,m1(g),m2(g),试样总质量m(g),定容V_total(mL),移取V_aliquot(mL),稀释倍数f,c_KMnO4(mol/L),空白V_start(mL),空白V_end(mL),空白V0(mL),试样V_start(mL),试样V_end(mL),试样V_total(mL),试样V_net(mL),w_Ca(%),Avg_w(%),RAD(%)\n";
+            
+            historyData.forEach(rec => {
+                if(!rec.stats) return;
+
+                const time = new Date(rec.date).toLocaleString().replace(',', ' ');
+                const avg = Number(rec.stats.avgPercent || 0).toFixed(2);
+                const rad = rec.stats.rad === null ? 'N/A' : Number(rec.stats.rad).toFixed(2);
+                
+                // 原始数据提取
+                const m1 = Number(rec.stats.m1Total || 0).toFixed(4);
+                const m2 = Number(rec.stats.m2Total || 0).toFixed(4);
+                const mSample = Number(rec.stats.mSampleTotal || 0).toFixed(4);
+                const f = Number(rec.stats.dilutionFactor || 0).toFixed(2);
+                const vTot = Number(rec.stats.vTotalVol || 0).toFixed(2);
+                const vAli = Number(rec.stats.vAliquot || 0).toFixed(2);
+                
+                const vbStart = Number(rec.stats.vBlankStart || 0).toFixed(2);
+                const vbEnd = Number(rec.stats.vBlankEnd || 0).toFixed(2);
+                const vBlank = Number(rec.stats.vBlank || 0).toFixed(2);
+
+                rec.results.forEach((r) => {
+                    if(!r || r.error) return;
+                    csv += `${time},平行样${r.id},${m1},${m2},${mSample},${vTot},${vAli},${f},${rec.cStd},${vbStart},${vbEnd},${vBlank},${r.vStart},${r.vEnd},${Number(r.vTotal).toFixed(2)},${Number(r.vNet).toFixed(2)},${Number(r.percent).toFixed(2)},${avg},${rad}\n`;
+                });
+            });
+            
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `钙含量分析数据_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function togglePrinciple() {
+            const content = document.getElementById('principle-content');
+            const arrow = document.getElementById('principle-arrow');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            if(!toast) return;
+            const span = toast.querySelector('span');
+            if(span) span.innerText = msg;
+            
+            const icon = toast.querySelector('svg');
+            
+            if (isError && icon) {
+                icon.classList.remove('text-green-400');
+                icon.classList.add('text-red-400');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+            } else if (icon) {
+                icon.classList.remove('text-red-400');
+                icon.classList.add('text-green-400'); 
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function copyText(el) {
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => showToast("已复制到剪贴板"));
+        }
+
+        const colorPalettes = {
+            'purple': { 
+                light: { '--accent-color': '#7c3aed', '--accent-color-dark': '#6d28d9', '--accent-bg': '#f3e8ff' }, 
+                dark: { '--accent-color': '#a78bfa', '--accent-color-dark': '#8b5cf6', '--accent-bg': '#2e1065' } 
+            },
+            'blue': { 
+                light: { '--accent-color': '#0284c7', '--accent-color-dark': '#0369a1', '--accent-bg': '#e0f2fe' }, 
+                dark: { '--accent-color': '#38bdf8', '--accent-color-dark': '#0ea5e9', '--accent-bg': '#082f49' } 
+            },
+            'emerald': { 
+                light: { '--accent-color': '#059669', '--accent-color-dark': '#047857', '--accent-bg': '#ecfdf5' }, 
+                dark: { '--accent-color': '#34d399', '--accent-color-dark': '#10b981', '--accent-bg': '#102d24' } 
+            },
+            'pink': { 
+                light: { '--accent-color': '#db2777', '--accent-color-dark': '#be185d', '--accent-bg': '#fce7f3' }, 
+                dark: { '--accent-color': '#f472b6', '--accent-color-dark': '#ec4899', '--accent-bg': '#500724' } 
+            }
+        };
+        let currentAccent = 'purple';
+        let currentMode = 'light';
+        let isAnim = true;
+
+        function setAccent(name) {
+            currentAccent = name;
+            applyTheme();
+            document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`button[onclick="setAccent('${name}')"]`);
+            if(btn) btn.classList.add('active');
+        }
+        
+        function toggleMode() {
+            currentMode = currentMode === 'light' ? 'dark' : 'light';
+            const modeText = document.getElementById('mode-text');
+            if(modeText) modeText.innerText = currentMode === 'light' ? '浅色' : '深色';
+            document.body.setAttribute('data-mode', currentMode);
+            applyTheme();
+        }
+        
+        function applyTheme() {
+            const p = colorPalettes[currentAccent][currentMode];
+            const root = document.documentElement;
+            root.style.setProperty('--accent-color', p['--accent-color']);
+            root.style.setProperty('--accent-color-dark', p['--accent-color-dark']);
+            root.style.setProperty('--accent-bg', p['--accent-bg']);
+            const hex = p['--accent-color'].replace('#', '');
+            const r = parseInt(hex.substring(0,2), 16);
+            const g = parseInt(hex.substring(2,4), 16);
+            const b = parseInt(hex.substring(4,6), 16);
+            root.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
+        }
+
+        function toggleAnimation() {
+            isAnim = !isAnim;
+            const animText = document.getElementById('animation-text');
+            if(animText) animText.innerText = isAnim ? '动效开' : '动效关';
+            document.documentElement.style.setProperty('--animation-state', isAnim ? 'running' : 'paused');
+            const floatCont = document.getElementById('floating-container');
+            if(floatCont) floatCont.style.opacity = isAnim ? '1' : '0';
+        }
+
+        function createFloatingElements() { 
+            const container = document.getElementById('floating-container');
+            if(!container) return;
+            container.innerHTML = ''; 
+            const symbols = ['Ca²⁺', 'MnO₄⁻', 'C₂O₄²⁻', 'CaC₂O₄', 'H⁺', 'CO₂', 'Mn²⁺', '紫红', '无色', '沉淀']; 
+            for (let i = 0; i < 35; i++) {
+                const el = document.createElement('div');
+                el.classList.add('floating-element');
+                el.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                el.style.setProperty('--random-x', Math.random() * 100 + 'vw');
+                el.style.fontSize = (Math.random() * 1.5 + 0.8) + 'rem';
+                el.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                el.style.animationDelay = (Math.random() * -20) + 's';
+                container.appendChild(el);
+            }
+        }
+
+        window.onload = function() {
+            renderHistory();
+            createFloatingElements();
+            applyTheme(); 
+            toggleGroup2(); // 初始化状态
+        }
+
+    </script>
+</body>
+</html>
