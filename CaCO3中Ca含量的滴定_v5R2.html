@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>氧化钙中钙含量的测定 (高锰酸钾滴定法)</title>
+    <title>碳酸钙中钙含量的测定 (高锰酸钾滴定法)</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -325,7 +325,7 @@
             </div>
             
             <div class="text-center space-y-2">
-                <h1 class="main-title text-primary">氧化钙中钙含量的测定<br><span class="text-lg opacity-80 font-normal">(高锰酸钾氧化还原滴定法)</span></h1>
+                <h1 class="main-title text-primary">碳酸钙中钙含量的测定<br><span class="text-lg opacity-80 font-normal">(高锰酸钾氧化还原滴定法)</span></h1>
             </div>
 
             <!-- 原理展开折叠 -->
@@ -337,7 +337,7 @@
                 <div id="principle-content" class="hidden p-4 text-sm text-[var(--text-secondary)] space-y-3 bg-[var(--bg-canvas)]">
                     <div class="space-y-1">
                         <p class="font-bold">1. 试样制备 (定容):</p>
-                        <p class="text-xs text-gray-500">称取质量 m 的试样，溶解并定容至 V<sub>总</sub> (如250mL)。每次移取 V<sub>移</sub> (如25mL) 进行滴定。</p>
+                        <p class="text-xs text-gray-500">称取质量 m 的试样，用酸溶解并定容至 V<sub>总</sub> (如250mL)。每次移取 V<sub>移</sub> (如25mL) 进行滴定。</p>
                         <p class="formula pl-4 text-xs font-bold text-[var(--accent-color)]">稀释倍数 f = V<sub>总</sub> / V<sub>移</sub></p>
                     </div>
                     <div class="space-y-1">
@@ -392,7 +392,7 @@
                 </div>
                
                 <div class="bg-[var(--bg-canvas)] p-3 rounded border border-[var(--border-light)]">
-                    <p class="text-xs font-bold text-[var(--accent-color)] mb-2">氧化钙试样总质量 (定容前)</p>
+                    <p class="text-xs font-bold text-[var(--accent-color)] mb-2">碳酸钙试样总质量 (定容前)</p>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 items-end">
                         <div>
                             <label class="block text-[10px] text-secondary">称量瓶+样 m₁ (g)</label>
@@ -601,7 +601,7 @@
         // --- 核心逻辑 ---
         
         // 更换Key以强制使用新数据结构
-        const HISTORY_KEY = 'caTitrationHistory_v5_full_record';
+        const HISTORY_KEY = 'caco3TitrationHistory_v1';
         let historyData = [];
         try {
             const raw = localStorage.getItem(HISTORY_KEY);
@@ -1183,7 +1183,7 @@
             const container = document.getElementById('floating-container');
             if(!container) return;
             container.innerHTML = ''; 
-            const symbols = ['Ca²⁺', 'MnO₄⁻', 'C₂O₄²⁻', 'CaC₂O₄', 'H⁺', 'CO₂', 'Mn²⁺', '紫红', '无色', '沉淀']; 
+            const symbols = ['Ca²⁺', 'MnO₄⁻', 'C₂O₄²⁻', 'CaC₂O₄', 'H⁺', 'CO₂', 'Mn²⁺', '紫红', '无色', '沉淀', 'CaCO₃']; 
             for (let i = 0; i < 35; i++) {
                 const el = document.createElement('div');
                 el.classList.add('floating-element');
