@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> 本仓库保留旧版代码，不再接收新版重构。经过公式修正、统一命名、自动化测试和构建升级的新版本请访问：
+> **[PWO-CHINA/Chemistry-Calculator-Toolkit](https://github.com/PWO-CHINA/Chemistry-Calculator-Toolkit)**
 # 化学计算器工具集 (Chemistry Calculator Toolkit)
 
 综合化学分析实验计算工具集，包含八个专业计算器，支持数据管理、历史追溯和离线使用。
